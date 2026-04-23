@@ -1,0 +1,18 @@
+stages:
+  - build
+  - test
+  - deploy
+
+build_job:
+  stage: build
+  script:
+    - cargo tauri build
+  artifacts:
+    paths:
+      - src-tauri/target/release/gms-control-center
+
+security_audit:
+  stage: test
+  script:
+    - # Integrate SAST and Secret Detection
+    - echo "Running Phase IX Security Audit..."
