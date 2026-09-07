@@ -17,6 +17,23 @@ jobs:
 
       # Provenance note: this commit intentionally re-triggers the execution instrument.
       # A successful workflow run is still evidence to be inspected, not assumed.
+      - name: Recover ACT-R runtime source inventory
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/actr-results/runtime-source"
+          docker run --rm \
+            --entrypoint sh \
+            db30/act-r-container \
+            -lc 'find /home/actr/actr7.x -type f \( -name "procedural.lisp" -o -iname "*random*.lisp" -o -name "mt19937ar.c" \) -print' \
+            > actr-results/runtime-source/source-inventory.txt
+
+          docker run --rm \
+            -v "$PWD/actr-results/runtime-source:/results" \
+            --entrypoint sh \
+            db30/act-r-container \
+            -lc 'for f in $(find /home/actr/actr7.x -type f \( -name "procedural.lisp" -o -iname "*random*.lisp" -o -name "mt19937ar.c" \)); do echo "===== $f ====="; grep -n -E "(random|tie|conflict|:er|minimum-utility|compute-utility|production-selection)" "$f" || true; done' \
+            > actr-results/runtime-source/relevant-source-snippets.txt
+
       - name: Run official ACT-R container
         run: |
           set -euo pipefail
