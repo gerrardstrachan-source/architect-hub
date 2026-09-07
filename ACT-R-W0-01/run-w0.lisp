@@ -37,6 +37,9 @@
 (defun w0-production-count ()
   (length (all-productions)))
 
+(defun w0-rng-state ()
+  (no-output (sgp :seed)))
+
 (defun w0-write-row (stream entry)
   (format stream "~D,~A,~A,~A,~D,~D,~A,~S,~S,~A,~A~%"
           (getf entry :trial) (getf entry :state)
@@ -52,25 +55,27 @@
     (format stream "trial,state,production,action,correctness,environment_reward,actr_time_action,utility_before,utility_after,seed,production_count_after~%")
     (dolist (entry (reverse *w0-log*)) (w0-write-row stream entry))))
 
-(defun w0-record-trial (state production action env-reward correctness before-utils)
+(defun w0-record-trial (state production action env-reward correctness before-utils rng-before)
   (let ((entry (list :trial *w0-current-trial* :state state
                      :selected-production production :action action
                      :correctness correctness :environment-reward env-reward
                      :utility-before before-utils :utility-after nil
                      :actr-time-action (mp-time-ms) :actr-time-reward nil
-                     :seed *w0-seed* :production-count-after nil)))
+                     :seed *w0-seed* :production-count-after nil
+                     :rng-before rng-before)))
     (push entry *w0-log*)
     (incf (gethash (list state action) *w0-selection-counts* 0))
-    (format t "W0-TRIAL trial=~D state=~A production=~A action=~A correct=~D env_reward=~D time_ms=~D~%"
-            *w0-current-trial* state production action correctness env-reward (mp-time-ms))))
+    (format t "W0-TRIAL trial=~D state=~A production=~A action=~A correct=~D env_reward=~D time_ms=~D rng_state=~S~%"
+            *w0-current-trial* state production action correctness env-reward (mp-time-ms) rng-before)))
 
 (defun w0-action (state action production)
   (unless *w0-current-trial* (error "W0 action occurred without an active trial."))
-  (let* ((before-utils (w0-current-utilities))
+  (let* ((rng-before (w0-rng-state))
+         (before-utils (w0-current-utilities))
          (truth (w0-lookup-truth state))
          (correctness (if (eql action truth) 1 0))
          (env-reward (if (= correctness 1) 1 0)))
-    (w0-record-trial state production action env-reward correctness before-utils)
+    (w0-record-trial state production action env-reward correctness before-utils rng-before)
     (trigger-reward env-reward)
     (schedule-event-relative 0.001 'w0-finish-trial :maintenance t :priority :min)))
 
@@ -112,6 +117,7 @@
         *w0-trial-index* 1 *w0-current-trial* 1 *w0-log* nil
         *w0-selection-counts* (make-hash-table :test #'equal))
   (format t "W0-CONFIG seed=~D productions=~D~%" seed (w0-production-count))
+  (format t "W0-INITIAL-RNG-STATE ~S~%" (w0-rng-state))
   (format t "W0-INITIAL-UTILITIES ~S~%" (w0-current-utilities))
   (w0-present-state (first *w0-sequence*))
   (run 1000)
