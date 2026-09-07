@@ -1,0 +1,41 @@
+name: ACT-R-W0-01 Calibration
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ACT-R-W0-01/**'
+      - '.github/workflows/actr-w0-calibration.yml'
+
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Run official ACT-R container
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/actr-results"
+          docker run --rm \
+            -v "$PWD/ACT-R-W0-01:/experiment:ro" \
+            -v "$PWD/actr-results:/results" \
+            --entrypoint sbcl \
+            db30/act-r-container \
+            --non-interactive \
+            --load /home/actr/quicklisp/setup.lisp \
+            --load /home/actr/actr7.x/load-act-r.lisp \
+            --eval '(progn (init-des) (echo-act-r-output) (mp-print-versions))' \
+            --load /experiment/ACT-R-W0-01.lisp \
+            --load /experiment/run-w0.lisp \
+            --eval '(run-w0 20260907 "/results/w0-results.csv")' \
+            > actr-results/runtime.stdout.txt 2> actr-results/runtime.stderr.txt
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: actr-w0-runtime-evidence
+          path: actr-results/
