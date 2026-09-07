@@ -1,0 +1,81 @@
+name: ACT-R-W0-H1 Held-Out State
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ACT-R-W0-01/H1-heldout-model.lisp'
+      - 'ACT-R-W0-01/run-h1.lisp'
+      - 'ACT-R-W0-01/H1-manifest.json'
+      - '.github/workflows/actr-w0-h1.yml'
+
+jobs:
+  h1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Acquire current ACT-R release source
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/h1-results/actr-source"
+          curl --ciphers 'DEFAULT:@SECLEVEL=1' -fsSL https://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
+            -o h1-results/actr-source/actr7.container.zip
+          rm -rf h1-results/actr-source/extracted
+          mkdir -p h1-results/actr-source/extracted
+          unzip -q h1-results/actr-source/actr7.container.zip \
+            -d h1-results/actr-source/extracted
+          ACTR_ROOT="$(find h1-results/actr-source/extracted -type f -name load-act-r.lisp -printf '%h\n' | head -n 1)"
+          test -n "$ACTR_ROOT"
+          printf '%s\n' "$ACTR_ROOT" > h1-results/actr-source/actr-root.txt
+          grep -E '^\(defvar \*actr-(architecture|major|minor)-version-string\*' \
+            "$ACTR_ROOT/framework/version-string.lisp" > h1-results/actr-source/version-definitions.txt
+          grep -Eq '\*actr-major-version-string\* "31"' h1-results/actr-source/version-definitions.txt
+          grep -Eq '\*actr-minor-version-string\* "4"' h1-results/actr-source/version-definitions.txt
+          sha256sum h1-results/actr-source/actr7.container.zip > h1-results/actr-source/actr7.container.zip.sha256
+
+      - name: Verify ACT-R 7.31.4
+        run: |
+          set -euo pipefail
+          ACTR_ROOT="$(cat h1-results/actr-source/actr-root.txt)"
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (mp-print-versions))"' \
+            > h1-results/actr-source/runtime-version.txt 2> h1-results/actr-source/runtime-version.stderr.txt
+          cat h1-results/actr-source/runtime-version.txt
+          grep -Eq 'Software[[:space:]]*: 7\.31\.4-' h1-results/actr-source/runtime-version.txt
+
+      - name: Run H1 against verified current ACT-R
+        run: |
+          set -euo pipefail
+          ACTR_ROOT="$(cat h1-results/actr-source/actr-root.txt)"
+          mkdir -p "$PWD/h1-results"
+          chmod 777 "$PWD/h1-results"
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            -v "$PWD/ACT-R-W0-01:/experiment:ro" \
+            -v "$PWD/h1-results:/results" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (echo-act-r-output) (mp-print-versions))" \
+                   --load /experiment/H1-heldout-model.lisp \
+                   --load /experiment/run-h1.lisp \
+                   --eval "(run-h1 20260907 \"/results/h1-results.csv\")"' \
+            > h1-results/runtime.stdout.txt 2> h1-results/runtime.stderr.txt
+
+      - name: Upload H1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: actr-w0-h1-runtime-evidence
+          path: h1-results/
