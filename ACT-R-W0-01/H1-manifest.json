@@ -1,0 +1,30 @@
+{
+  "test_id": "WORLD-0-H1-HELDOUT-S3-20260907",
+  "base_fixture_id": "WORLD-0-FIXTURE-20260907-BALANCED-100",
+  "training_trials": 75,
+  "holdout_trials": 25,
+  "training_state_counts": {
+    "S0": 25,
+    "S1": 25,
+    "S2": 25,
+    "S3": 0
+  },
+  "holdout_state": "S3",
+  "holdout_feedback": false,
+  "sequence_sha256": "b734491084c3c41dcf100bb57f1ba09e3b17eb2e16721d336d6aeb92e44ebe46",
+  "actr_seed": 20260907,
+  "locked_prediction": {
+    "actr_state_specific": "stochastic A0/A1 because S3-A0 and S3-A1 remain tied",
+    "bayesian_boolean": "A0 because XOR is selected by S0,S1,S2 evidence"
+  },
+  "clean_simulation_reconciliation": {
+    "actr_compatible_holdout_accuracy": 14,
+    "actr_compatible_holdout_trials": 25,
+    "actr_compatible_holdout_percent": 56.0,
+    "bayesian_holdout_accuracy": 25,
+    "bayesian_holdout_trials": 25,
+    "bayesian_holdout_percent": 100.0,
+    "note": "Clean rerun from frozen fixture and locked simulation specification resolves the historical 13/25 vs 14/25 discrepancy in favor of 14/25. Runtime result remains the empirical authority."
+  },
+  "prospective_status": "simulation reconciled; ACT-R 7.31.4 runtime pending"
+}
