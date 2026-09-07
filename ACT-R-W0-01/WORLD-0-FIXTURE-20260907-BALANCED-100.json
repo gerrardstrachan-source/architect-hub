@@ -1,0 +1,20 @@
+{
+  "fixture_id": "WORLD-0-FIXTURE-20260907-BALANCED-100",
+  "trials": 100,
+  "state_counts": {
+    "S0": 25,
+    "S1": 25,
+    "S2": 25,
+    "S3": 25
+  },
+  "sequence_sha256": "687236f1a958549fe6a80cee95e91b922b24398219c6ffbc9a2e5bee55149de4",
+  "fixture_generation": "Python random.Random(20260907) applied to [S0,S1,S2,S3] repeated 25 times, then explicitly frozen.",
+  "ground_truth": {
+    "S0": "A0",
+    "S1": "A1",
+    "S2": "A1",
+    "S3": "A0"
+  },
+  "learner_seed": 20260907,
+  "seed_provenance_note": "Fixture ordering and ACT-R learner RNG are separate provenance objects."
+}
