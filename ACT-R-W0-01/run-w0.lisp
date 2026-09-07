@@ -71,8 +71,13 @@
     (schedule-event-relative 0.001 'w0-finish-trial :maintenance t :priority :min)))
 
 (defun w0-present-state (state)
-  (goal-focus (ecase state
-                (S0 'g-s0) (S1 'g-s1) (S2 'g-s2) (S3 'g-s3))))
+  ;; Use the function form because the macro form does not evaluate STATE here.
+  (goal-focus-fct
+   (ecase state
+     (S0 'G-S0)
+     (S1 'G-S1)
+     (S2 'G-S2)
+     (S3 'G-S3))))
 
 (defun w0-finish-trial ()
   (let ((entry (car *w0-log*)))
