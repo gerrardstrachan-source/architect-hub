@@ -5,12 +5,14 @@
   '((S0 . A0) (S1 . A1) (S2 . A1) (S3 . A0)))
 
 ;; Deterministic 100-trial sequence generated from seed 20260907 with 25 occurrences of each state.
+;; Provenance correction: the previous GitHub copy accidentally contained one extra trailing S1,
+;; producing 101 entries. This version is the verified 100-trial sequence.
 (defparameter *w0-sequence*
   '(S2 S3 S2 S2 S1 S3 S1 S0 S3 S3 S3 S3 S1 S0 S3 S3 S3 S1 S2 S0
     S1 S2 S3 S1 S2 S3 S0 S3 S2 S2 S3 S3 S2 S1 S0 S1 S0 S3 S1 S2
     S2 S2 S2 S2 S2 S2 S3 S2 S2 S3 S1 S2 S1 S3 S0 S0 S0 S3 S1 S0
     S0 S2 S0 S3 S1 S1 S0 S0 S1 S0 S0 S1 S2 S0 S0 S0 S3 S0 S3 S0
-    S3 S1 S0 S1 S2 S1 S2 S1 S0 S1 S0 S2 S1 S2 S1 S3 S3 S1 S2 S0 S1))
+    S3 S1 S0 S1 S2 S1 S2 S1 S0 S1 S0 S2 S1 S2 S1 S3 S3 S1 S2 S0))
 
 (defparameter *w0-trial-index* 0)
 (defparameter *w0-current-trial* nil)
