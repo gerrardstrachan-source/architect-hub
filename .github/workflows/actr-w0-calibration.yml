@@ -70,6 +70,7 @@ jobs:
           set -euo pipefail
           ACTR_ROOT="$(cat actr-results/actr-source/actr-root.txt)"
           mkdir -p "$PWD/actr-results"
+          chmod 777 "$PWD/actr-results"
           docker run --rm \
             -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
             -v "$PWD/ACT-R-W0-01:/experiment:ro" \
