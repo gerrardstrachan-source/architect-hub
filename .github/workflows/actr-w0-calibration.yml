@@ -17,11 +17,13 @@ jobs:
 
       # Provenance note: this workflow deliberately acquires the current official
       # ACT-R source rather than relying on the potentially older container bundle.
+      # The official host currently negotiates a legacy DH parameter size; lower
+      # OpenSSL security level for this transfer only. Certificate verification stays enabled.
       - name: Acquire current ACT-R release source
         run: |
           set -euo pipefail
           mkdir -p "$PWD/actr-results/actr-source"
-          curl -fsSL https://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
+          curl --ciphers 'DEFAULT:@SECLEVEL=1' -fsSL https://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
             -o actr-results/actr-source/actr7.container.zip
           rm -rf actr-results/actr-source/extracted
           mkdir -p actr-results/actr-source/extracted
