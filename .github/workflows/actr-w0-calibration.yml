@@ -10,17 +10,18 @@ on:
 jobs:
   calibration:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Checkout experiment
         uses: actions/checkout@v4
 
-      # Provenance note: execution evidence must be inspected, not assumed.
+      # Provenance note: this workflow deliberately acquires the current official
+      # ACT-R source rather than relying on the potentially older container bundle.
       - name: Acquire current ACT-R release source
         run: |
           set -euo pipefail
           mkdir -p "$PWD/actr-results/actr-source"
-          curl -fsSL http://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
+          curl -fsSL https://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
             -o actr-results/actr-source/actr7.container.zip
           rm -rf actr-results/actr-source/extracted
           mkdir -p actr-results/actr-source/extracted
@@ -29,30 +30,38 @@ jobs:
           ACTR_ROOT="$(find actr-results/actr-source/extracted -type f -name load-act-r.lisp -printf '%h\n' | head -n 1)"
           test -n "$ACTR_ROOT"
           printf '%s\n' "$ACTR_ROOT" > actr-results/actr-source/actr-root.txt
+          grep -E '^\(defvar \*actr-(architecture|major|minor)-version-string\*' \
+            "$ACTR_ROOT/framework/version-string.lisp" \
+            > actr-results/actr-source/version-definitions.txt
+          grep -Eq '\*actr-major-version-string\* "31"' actr-results/actr-source/version-definitions.txt
+          grep -Eq '\*actr-minor-version-string\* "4"' actr-results/actr-source/version-definitions.txt
+          sha256sum actr-results/actr-source/actr7.container.zip \
+            > actr-results/actr-source/actr7.container.zip.sha256
 
-      - name: Verify ACT-R runtime version and recover source path
+      - name: Verify ACT-R 7.31.4 and recover source path
         run: |
           set -euo pipefail
           ACTR_ROOT="$(cat actr-results/actr-source/actr-root.txt)"
           docker run --rm \
             -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
-            --entrypoint sbcl \
+            --entrypoint sh \
             db30/act-r-container \
-            --non-interactive \
-            --load /home/actr/quicklisp/setup.lisp \
-            --load /current-actr/load-act-r.lisp \
-            --eval '(progn (init-des) (mp-print-versions))' \
-            > actr-results/actr-source/runtime-version.txt 2> actr-results/actr-source/runtime-version.stderr.txt
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (mp-print-versions))"' \
+            > actr-results/actr-source/runtime-version.txt \
+            2> actr-results/actr-source/runtime-version.stderr.txt
           cat actr-results/actr-source/runtime-version.txt
-          grep -Eq 'Software[[:space:]]*: 7\.31\.4-' actr-results/actr-source/runtime-version.txt
-
-          cp "$ACTR_ROOT/core-modules/procedural.lisp" actr-results/actr-source/procedural.lisp
-          cp "$ACTR_ROOT/framework/random.lisp" actr-results/actr-source/random.lisp
+          grep -Eq 'Software[[:space:]]*: 7\.31\.4-' \
+            actr-results/actr-source/runtime-version.txt
+          cp "$ACTR_ROOT/core-modules/procedural.lisp" \
+            actr-results/actr-source/procedural.lisp
+          cp "$ACTR_ROOT/framework/random.lisp" \
+            actr-results/actr-source/random.lisp
           find "$ACTR_ROOT" -type f -name 'mt19937ar.c' -print \
             > actr-results/actr-source/mt19937-location.txt
-          if [ -s actr-results/actr-source/mt19937-location.txt ]; then
-            while IFS= read -r f; do cp "$f" actr-results/actr-source/; done < actr-results/actr-source/mt19937-location.txt
-          fi
 
       - name: Run ACT-R-W0-01 against verified current ACT-R
         run: |
@@ -63,16 +72,18 @@ jobs:
             -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
             -v "$PWD/ACT-R-W0-01:/experiment:ro" \
             -v "$PWD/actr-results:/results" \
-            --entrypoint sbcl \
+            --entrypoint sh \
             db30/act-r-container \
-            --non-interactive \
-            --load /home/actr/quicklisp/setup.lisp \
-            --load /current-actr/load-act-r.lisp \
-            --eval '(progn (init-des) (echo-act-r-output) (mp-print-versions))' \
-            --load /experiment/ACT-R-W0-01.lisp \
-            --load /experiment/run-w0.lisp \
-            --eval '(run-w0 20260907 "/results/w0-results.csv")' \
-            > actr-results/runtime.stdout.txt 2> actr-results/runtime.stderr.txt
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (echo-act-r-output) (mp-print-versions))" \
+                   --load /experiment/ACT-R-W0-01.lisp \
+                   --load /experiment/run-w0.lisp \
+                   --eval "(run-w0 20260907 \"/results/w0-results.csv\")"' \
+            > actr-results/runtime.stdout.txt \
+            2> actr-results/runtime.stderr.txt
 
       - name: Upload runtime evidence
         if: always()
