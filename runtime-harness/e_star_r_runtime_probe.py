@@ -3,6 +3,7 @@ from __future__ import print_function
 import hashlib
 import os
 import platform
+import subprocess
 import sys
 import types
 
@@ -16,13 +17,10 @@ EXPECTED = {
 
 workspace = os.getcwd()
 
-# Verify exact pinned source bytes before controlled loading.
+# Verify exact pinned source bytes against their Git blob identities.
 for name, digest in EXPECTED.items():
     path = os.path.join(workspace, name)
-    h = hashlib.sha1()
-    with open(path, "rb") as fh:
-        h.update(fh.read())
-    actual = h.hexdigest()
+    actual = subprocess.check_output(["git", "hash-object", path]).strip()
     assert actual == digest, (name, actual, digest)
 
 # DORA.py is an interactive executable and enters its MainMenu loop at module
@@ -76,6 +74,6 @@ print("NUMPY=" + numpy.__version__)
 print("PYGAME=" + pygame.version.ver)
 print("DORA_VERSION=" + DORA.vers_number)
 print("FIRING_ORDER_RULE=" + params["firingOrderRule"])
-print("SOURCE_SHA1_DORA=" + EXPECTED["DORA.py"])
-print("SOURCE_SHA1_BASICRUNDORA=" + EXPECTED["basicRunDORA.py"])
+print("GIT_BLOB_SHA_DORA=" + EXPECTED["DORA.py"])
+print("GIT_BLOB_SHA_BASICRUNDORA=" + EXPECTED["basicRunDORA.py"])
 print("CONTROLLED_LOAD_EXCLUDED_INTERACTIVE_MAIN_BODY=True")
