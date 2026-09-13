@@ -12,7 +12,7 @@
     "controller_path": "ACT-R-W0-01/run-h2-matching.lisp",
     "controller_blob_sha": "58cde21131cee94089bf14ab9ccbf9d4bb838396",
     "audit_path": "ACT-R-W0-01/audit-h2-matching.py",
-    "audit_blob_sha": "3abfe91c8d9f7ec727f1955d8fb1ddf967d72422"
+    "audit_blob_sha": "f4c234dcbbbc072a501cecd56b312965007ae08a"
   },
   "fixture": {
     "canonical_complete_fixture": "ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv",
@@ -52,7 +52,7 @@
     "paired": true
   },
   "execution_status": {
-    "static_audit_run": true,
+    "static_audit_run": false,
     "actr_matching_run": false,
     "future_prediction_run": false,
     "h2_execution": false
