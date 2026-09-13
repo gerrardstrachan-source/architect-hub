@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+# Authorized empirical stage: primary H-S/H-C only.
+# Replication and A-D future-task execution are intentionally excluded.
+
 jobs:
   primary:
     runs-on: ubuntu-latest
@@ -179,6 +182,7 @@ jobs:
           PY
 
       - name: Record primary-stage boundary
+        if: always()
         run: |
           set -euo pipefail
           printf '%s\n' 'Primary execution completed. Replication and future-condition execution are not part of this run.' > h2-primary-results/PRIMARY-STAGE-BOUNDARY.txt
