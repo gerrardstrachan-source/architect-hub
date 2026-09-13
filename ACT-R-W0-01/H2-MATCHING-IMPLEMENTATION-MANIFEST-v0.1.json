@@ -10,7 +10,7 @@
     "model_path": "ACT-R-W0-01/H2-MATCHING-MODEL-v0.1.lisp",
     "model_blob_sha": "b975c98274cd78867ed0c5dd0ea8d84189a861d9",
     "controller_path": "ACT-R-W0-01/run-h2-matching.lisp",
-    "controller_blob_sha": "e0a56e4f544caa49d0710f49d3943b9920b81aff",
+    "controller_blob_sha": "58cde21131cee94089bf14ab9ccbf9d4bb838396",
     "audit_path": "ACT-R-W0-01/audit-h2-matching.py",
     "audit_blob_sha": "3abfe91c8d9f7ec727f1955d8fb1ddf967d72422"
   },
