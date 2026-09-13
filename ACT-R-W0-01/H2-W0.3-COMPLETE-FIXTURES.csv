@@ -1,1 +1,11 @@
-history,phase,condition,trial,source_c,source_x,source_y,present_c,present_x,present_y,correct_action
+fixture_id,history,phase,condition,n,source_state_sequence_sha256,presented_state_sequence_sha256,correct_action_rule,artifact_status
+H2-W0.3-training-HS,H-S,training,T,192,5fb17bee3cca914261cd2fb6db6e5cf0411b63425aca9aec4db0639343e3d9e3,5fb17bee3cca914261cd2fb6db6e5cf0411b63425aca9aec4db0639343e3d9e3,A0 iff x XOR y = 1,canonical-sequence-reference
+H2-W0.3-training-HC,H-C,training,T,192,5fb17bee3cca914261cd2fb6db6e5cf0411b63425aca9aec4db0639343e3d9e3,5fb17bee3cca914261cd2fb6db6e5cf0411b63425aca9aec4db0639343e3d9e3,A0 iff c XOR x = 1,canonical-sequence-reference
+H2-W0.3-HS-A,H-S,future,A,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,same source rule; A introduces held-out states 010 and 101,canonical-sequence-reference
+H2-W0.3-HS-B,H-S,future,B,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,A0 iff c XOR y = 1,canonical-sequence-reference
+H2-W0.3-HS-C,H-S,future,C,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,present c'=1-c x'=1-x y'=1-y; source rule preserved,canonical-sequence-reference
+H2-W0.3-HS-D,H-S,future,D,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,complement source correct-action mapping,canonical-sequence-reference
+H2-W0.3-HC-A,H-C,future,A,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,same source rule; A introduces held-out states 010 and 101,canonical-sequence-reference
+H2-W0.3-HC-B,H-C,future,B,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,A0 iff c XOR y = 1,canonical-sequence-reference
+H2-W0.3-HC-C,H-C,future,C,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,present c'=1-c x'=1-x y'=1-y; source rule preserved,canonical-sequence-reference
+H2-W0.3-HC-D,H-C,future,D,96,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451,complement source correct-action mapping,canonical-sequence-reference
