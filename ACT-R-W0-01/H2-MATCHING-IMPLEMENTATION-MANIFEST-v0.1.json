@@ -12,8 +12,11 @@
     "controller_path": "ACT-R-W0-01/run-h2-matching.lisp",
     "controller_blob_sha": "58cde21131cee94089bf14ab9ccbf9d4bb838396",
     "audit_path": "ACT-R-W0-01/audit-h2-matching.py",
-    "audit_blob_sha": "f4c234dcbbbc072a501cecd56b312965007ae08a",
-    "audit_workflow": ".github/workflows/audit-h2-matching.yml"
+    "audit_blob_sha": "f8f41d9a02501cc19eaa5bd505e6c4254ecd10d1",
+    "evaluator_path": "ACT-R-W0-01/evaluate-h2-matching.py",
+    "evaluator_blob_sha": "61f8614abaf8b4253d03600f340f2df7ff4b1b8c",
+    "audit_workflow": ".github/workflows/audit-h2-matching.yml",
+    "runtime_validation_workflow": ".github/workflows/validate-h2-actr-implementation.yml"
   },
   "fixture": {
     "canonical_complete_fixture": "ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv",
