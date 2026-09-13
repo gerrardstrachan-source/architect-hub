@@ -1,0 +1,80 @@
+{
+  "specification": "H2-ACT-R-MATCHING-CAPABILITY-ENVELOPE-v0.1",
+  "status": "MATCHING-STAGE-LOCK-CANDIDATE",
+  "world": "H2-W0.3",
+  "purpose": "Immediate-performance matching only; no future-condition prediction or H2 execution authorization.",
+  "interface": {
+    "observable_inputs": ["c", "x", "y"],
+    "domains": {"c":[0,1],"x":[0,1],"y":[0,1]},
+    "actions": ["A0","A1"],
+    "feedback": "environmental feedback after selected action",
+    "forbidden_inputs": ["relation label","XOR feature","structure label","correct action before choice","history identity","future condition identity"]
+  },
+  "representation": {
+    "goal_chunk_type": "h2-goal",
+    "slots": ["c","x","y"],
+    "forbidden_slots": ["xor","relation","rule","structure","correct-action"]
+  },
+  "mechanisms": {
+    "procedural_matching": true,
+    "utility_learning": true,
+    "subsymbolic_processing": true,
+    "production_compilation": false,
+    "declarative_memory_retrieval": false,
+    "imaginal": false,
+    "partial_matching": false,
+    "spreading_activation": false,
+    "visual_module": false,
+    "auditory_module": false,
+    "manual_module": false,
+    "vocal_module": false
+  },
+  "general_parameters": {
+    ":ult": true,
+    ":esc": true,
+    ":ul": true,
+    ":alpha": 0.2,
+    ":iu": 0,
+    ":egs": 0,
+    ":er": true,
+    ":epl": null
+  },
+  "parameter_rule": "Complete sgp state must be dumped and archived before first matching run. Additional implementation-required parameters must be declared before execution; no post-observation changes are permitted.",
+  "initialization": {
+    "clean_all_before_each_realization": true,
+    "task_specific_relation_chunk_preloaded": false,
+    "task_specific_learned_production_preloaded": false,
+    "cross_history_state_carryover": false
+  },
+  "timing": {
+    "primary_measure": "ACT-R model decision latency",
+    "definition": "t(action-selection-event) - t(stimulus-ready-event)",
+    "external_latency_included": false,
+    "latency_validity_required": true,
+    "invalid_latency_handling": "latency component unavailable; do not reconstruct post hoc"
+  },
+  "seeds": {
+    "paired": true,
+    "primary": [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029,1030,1031,1032],
+    "replication": [2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2031,2032]
+  },
+  "fixture": {
+    "path": "ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv",
+    "sha256": "10dc5cfb8a14774d77e951e106c575e289c15bf5503c611ec420c997ae33d32d"
+  },
+  "prediction_boundary": {
+    "future_rows_consumed_during_matching": false,
+    "A_to_D_forward_prediction_generated": false,
+    "H2_execution_authorized": false
+  },
+  "matching_dependency": "ACT-R-W0-01/H2-W0.3-MATCHING-PROTOCOL-v0.1.md",
+  "post_observation_prohibitions": [
+    "seed selection",
+    "seed deletion for numerical inconvenience",
+    "history replacement",
+    "parameter tuning to obtain a match",
+    "tolerance widening",
+    "criterion modification",
+    "mechanism activation to rescue matching failure"
+  ]
+}
