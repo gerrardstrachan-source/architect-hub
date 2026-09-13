@@ -45,6 +45,7 @@ jobs:
             --tmpfs /root:exec,size=256m \
             --tmpfs /home:exec,size=256m \
             -e SDL_VIDEODRIVER=dummy \
+            -e PYTHONPATH=/opt/BrPong_1/workspace \
             -v /tmp/BrPong_1:/opt/BrPong_1:ro \
             -v "$PWD/runtime-harness/e_star_r_runtime_probe.py":/opt/e_star_r_runtime_probe.py:ro \
             -v "$PWD/runtime-report":/opt/report \
