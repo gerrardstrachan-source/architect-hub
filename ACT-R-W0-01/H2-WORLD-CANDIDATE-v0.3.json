@@ -31,7 +31,7 @@
   "fixtures": {
     "state_sequences": "ACT-R-W0-01/H2-W0.3-STATE-SEQUENCES.json",
     "state_sequences_sha256": "2ab18d1acc75f85cdf017f11507bb1445a1bfc9eae002a8c580055a13615a68c",
-    "combined_csv_local_artifact_sha256": "75db87c5c0d3ec8fca8033ea7ff348d4ded602347612cce9fe6e6ac0343b7941",
+    "complete_csv_sha256": "10dc5cfb8a14774d77e951e106c575e289c15bf5503c611ec420c997ae33d32d",
     "training_state_sequence_sha256": "5fb17bee3cca914261cd2fb6db6e5cf0411b63425aca9aec4db0639343e3d9e3",
     "future_state_sequence_sha256": "285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451"
   },
@@ -40,5 +40,5 @@
   "B_definition": "Structural recombination: A0 iff c XOR y = 1.",
   "C_definition": "Surface bijection c'=1-c, x'=1-x, y'=1-y; source relation preserved.",
   "D_definition": "Complement source correct-action mapping.",
-  "status_note": "World repaired for exact training action-marginal equality. Immediate-performance matching still requires ACT-R model-level testing. No prediction, implementation, fixture freeze, or execution authorized."
+  "status_note": "World repaired for exact training action-marginal equality. Complete row-level CSV materialized deterministically from the canonical state sequences and independently reproduced at the recorded SHA-256. Immediate-performance matching still requires ACT-R model-level testing. No prediction, implementation, fixture freeze, or execution authorized."
 }
