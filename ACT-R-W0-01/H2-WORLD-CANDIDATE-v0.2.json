@@ -12,37 +12,14 @@
   "future_repetitions_per_state": 12,
   "ordered_state_sequences_artifact": "ACT-R-W0-01/H2-W0.2-STATE-SEQUENCES.json",
   "training_histories": {
-    "H-S": {
-      "definition": "A0 iff x XOR y = 1",
-      "sequence_sha256": "981452afd78444b43534db51586a56ec5b4add2e8874d118e54a2f5b4ed8ec79"
-    },
-    "H-C": {
-      "definition": "A0 iff c XOR x = 1",
-      "sequence_sha256": "14061134b32cb5cae973b7c8821fc1dbd0b55f3585dff64b28e9b700e17b3afd"
-    }
+    "H-S": {"definition":"A0 iff x XOR y = 1","state_sequence_sha256":"2e6b8170f69bdc4a70c74ca5127475fb75421858f23be0a9b4a3ec84d6f600fa"},
+    "H-C": {"definition":"A0 iff c XOR x = 1","state_sequence_sha256":"2e6b8170f69bdc4a70c74ca5127475fb75421858f23be0a9b4a3ec84d6f600fa"}
   },
   "future_conditions": {
-    "A": {
-      "definition": "held-out joint-state extension under the same source relation",
-      "novel_component": "The joint states 001 and 100 are absent from both training histories and first appear in A.",
-      "H-S_sequence_sha256": "a627f46ea616817322108fc84982e3b682c14e1f82d4178ad5f94753492139eb",
-      "H-C_sequence_sha256": "45518cb0c49ccc55e0235ca17caa5538ba94ae1f65abc64f3367f2953f5135a8"
-    },
-    "B": {
-      "definition": "structural recombination: A0 iff c XOR y = 1",
-      "H-S_sequence_sha256": "5608606ed76f2723fe78bbf64ed57134ac28c21049804e1395d70c2d4fc8b629",
-      "H-C_sequence_sha256": "f0a6322c1960e71eae2bc3c8323580e8a2f244e2f5e8bd0113d126a861a0b4e9"
-    },
-    "C": {
-      "definition": "surface bijection c->1-c, x->1-x, y->1-y; source relation preserved",
-      "H-S_sequence_sha256": "498790a2ceb14662ba5944296198f6a243dfa1f5317550eef38c411e56717696",
-      "H-C_sequence_sha256": "e2757945c6ed790f1995c437674533b30833691eb1dd867e044ba44d77dab387"
-    },
-    "D": {
-      "definition": "complement source action mapping",
-      "H-S_sequence_sha256": "821e8c577dc0bdbcf81f396bec1fb9e5833ab8fc487583f8ea8fc1720e051b86",
-      "H-C_sequence_sha256": "f07803906eb93a7f45ff329b940210297fc6fe0f4755e803be1955c1d3b8d818"
-    }
+    "A": {"definition":"held-out joint-state extension under the same source relation","novel_component":"The joint states 001 and 100 are absent from both training histories and first appear in A.","H-S_state_sequence_sha256":"2c10da1f104b90f1584194f0dbf49965faa093f5905314b0a2a0a0e9274dd40b","H-C_state_sequence_sha256":"2c10da1f104b90f1584194f0dbf49965faa093f5905314b0a2a0a0e9274dd40b"},
+    "B": {"definition":"structural recombination: A0 iff c XOR y = 1","H-S_state_sequence_sha256":"2c10da1f104b90f1584194f0dbf49965faa093f5905314b0a2a0a0e9274dd40b","H-C_state_sequence_sha256":"2c10da1f104b90f1584194f0dbf49965faa093f5905314b0a2a0a0e9274dd40b"},
+    "C": {"definition":"surface bijection c->1-c, x->1-x, y->1-y; source relation preserved","H-S_state_sequence_sha256":"f098d95f75aecd36452a73d74fdcab7ede3c76ce4b69b0b00594e0579a4facb2","H-C_state_sequence_sha256":"f098d95f75aecd36452a73d74fdcab7ede3c76ce4b69b0b00594e0579a4facb2"},
+    "D": {"definition":"complement source action mapping","H-S_state_sequence_sha256":"2c10da1f104b90f1584194f0dbf49965faa093f5905314b0a2a0a0e9274dd40b","H-C_state_sequence_sha256":"2c10da1f104b90f1584194f0dbf49965faa093f5905314b0a2a0a0e9274dd40b"}
   },
   "world_level_invariants": {
     "same_training_input_order": true,
