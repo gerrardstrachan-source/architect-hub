@@ -1,0 +1,193 @@
+name: ACT-R-W0 H2 Primary Matching
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/actr-w0-h2-primary.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  primary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout certified implementation
+        uses: actions/checkout@v4
+
+      - name: Verify certified source boundary
+        run: |
+          set -euo pipefail
+          python3 ACT-R-W0-01/audit-h2-matching.py
+          test ! -e h2-primary-results/matching-decision.json
+          test ! -e ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json
+          test ! -e ACT-R-W0-01/H2-MATCHING-RESULTS.csv
+
+      - name: Build training-only fixture
+        run: |
+          set -euo pipefail
+          rm -rf h2-primary-input h2-primary-results
+          mkdir -p h2-primary-input h2-primary-results
+          python3 - <<'PY'
+          import csv, hashlib, pathlib
+          src = pathlib.Path('ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv')
+          dst = pathlib.Path('h2-primary-input/H2-W0.3-TRAINING-ONLY.csv')
+          with src.open(newline='') as f:
+              rows = list(csv.reader(f))
+          header = rows[0]
+          data = [r for r in rows[1:] if len(r) >= 2 and r[1].strip().upper() == 'TRAINING']
+          if len(data) != 192:
+              raise SystemExit(f'expected 192 training rows, got {len(data)}')
+          if any(r[1].strip().upper() != 'TRAINING' for r in data):
+              raise SystemExit('non-training row entered derived training fixture')
+          with dst.open('w', newline='') as f:
+              w = csv.writer(f, lineterminator='\n')
+              w.writerow(header)
+              w.writerows(data)
+          digest = hashlib.sha256(dst.read_bytes()).hexdigest()
+          print(f'training_fixture_rows=192')
+          print(f'training_fixture_sha256={digest}')
+          PY
+
+      - name: Acquire current ACT-R release source
+        run: |
+          set -euo pipefail
+          mkdir -p h2-primary-results/actr-source
+          curl --ciphers 'DEFAULT:@SECLEVEL=1' -fsSL https://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
+            -o h2-primary-results/actr-source/actr7.container.zip
+          rm -rf h2-primary-results/actr-source/extracted
+          mkdir -p h2-primary-results/actr-source/extracted
+          unzip -q h2-primary-results/actr-source/actr7.container.zip \
+            -d h2-primary-results/actr-source/extracted
+          ACTR_ROOT="$(find h2-primary-results/actr-source/extracted -type f -name load-act-r.lisp -printf '%h\n' | head -n 1)"
+          test -n "$ACTR_ROOT"
+          printf '%s\n' "$ACTR_ROOT" > h2-primary-results/actr-source/actr-root.txt
+          grep -E '^\(defvar \*actr-(architecture|major|minor)-version-string\*' \
+            "$ACTR_ROOT/framework/version-string.lisp" > h2-primary-results/actr-source/version-definitions.txt
+          grep -Eq '\*actr-major-version-string\* "31"' h2-primary-results/actr-source/version-definitions.txt
+          grep -Eq '\*actr-minor-version-string\* "4"' h2-primary-results/actr-source/version-definitions.txt
+          sha256sum h2-primary-results/actr-source/actr7.container.zip > h2-primary-results/actr-source/actr7.container.zip.sha256
+
+      - name: Verify ACT-R 7.31.4 runtime
+        run: |
+          set -euo pipefail
+          ACTR_ROOT="$(cat h2-primary-results/actr-source/actr-root.txt)"
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (mp-print-versions))"' \
+            > h2-primary-results/runtime-version.txt 2> h2-primary-results/runtime-version.stderr.txt
+          grep -Eq 'Software[[:space:]]*: 7\.31\.4-' h2-primary-results/runtime-version.txt
+
+      - name: Execute frozen primary batch only
+        run: |
+          set -euo pipefail
+          test ! -e ACT-R-W0-01/H2-W0.3-FUTURE.csv
+          ACTR_ROOT="$(cat h2-primary-results/actr-source/actr-root.txt)"
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            -v "$PWD/ACT-R-W0-01/H2-MATCHING-MODEL-v0.1.lisp:/experiment/H2-MATCHING-MODEL-v0.1.lisp:ro" \
+            -v "$PWD/ACT-R-W0-01/run-h2-matching.lisp:/experiment/run-h2-matching.lisp:ro" \
+            -v "$PWD/ACT-R-W0-01/run-h2-matching-batch.lisp:/experiment/run-h2-matching-batch.lisp:ro" \
+            -v "$PWD/h2-primary-input:/input:ro" \
+            -v "$PWD/h2-primary-results:/results" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (echo-act-r-output) (mp-print-versions))" \
+                   --load /experiment/H2-MATCHING-MODEL-v0.1.lisp \
+                   --load /experiment/run-h2-matching.lisp \
+                   --load /experiment/run-h2-matching-batch.lisp \
+                   --eval "(run-h2-matching-primary \"/input/H2-W0.3-TRAINING-ONLY.csv\" \"/results\")"' \
+            > h2-primary-results/runtime.stdout.txt 2> h2-primary-results/runtime.stderr.txt
+
+      - name: Independently validate primary runtime output
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv, glob, math, pathlib, re
+          out = pathlib.Path('h2-primary-results')
+          seeds = list(range(1001,1033))
+          expected = {
+              'H-S': lambda c,x,y: ':A0' if (x ^ y) == 1 else ':A1',
+              'H-C': lambda c,x,y: ':A0' if (c ^ x) == 1 else ':A1',
+          }
+          for history, fn in expected.items():
+              files = sorted(glob.glob(str(out / f'{history}-primary-*.csv')))
+              if len(files) != 32:
+                  raise SystemExit(f'{history}: expected 32 primary files, got {len(files)}')
+              got = set()
+              for path in files:
+                  name = pathlib.Path(path).stem
+                  m = re.fullmatch(r'(H-S|H-C)-primary-(\d+)', name)
+                  if not m:
+                      raise SystemExit(f'malformed result filename: {path}')
+                  seed = int(m.group(2)); got.add(seed)
+                  if seed not in seeds or m.group(1) != history:
+                      raise SystemExit(f'wrong history/seed in filename: {path}')
+                  rows = list(csv.DictReader(open(path, newline='')))
+                  if len(rows) != 192:
+                      raise SystemExit(f'{path}: expected 192 rows')
+                  if [int(r['trial']) for r in rows] != list(range(1,193)):
+                      raise SystemExit(f'{path}: trial numbers are not exactly 1..192')
+                  for r in rows:
+                      if r['history'] != history: raise SystemExit(f'{path}: history mismatch')
+                      c,x,y = int(r['c']),int(r['x']),int(r['y'])
+                      if c not in (0,1) or x not in (0,1) or y not in (0,1): raise SystemExit(f'{path}: non-binary feature')
+                      if r['action'] not in (':A0', ':A1') or r['correct_action'] not in (':A0', ':A1'): raise SystemExit(f'{path}: invalid action symbol')
+                      if r['correct_action'] != fn(c,x,y): raise SystemExit(f'{path}: ground-truth mismatch')
+                      if int(r['correctness']) not in (0,1): raise SystemExit(f'{path}: non-binary correctness')
+                      if int(r['feedback']) != 1: raise SystemExit(f'{path}: feedback != 1')
+                      rt = float(r['rt'])
+                      if not math.isfinite(rt) or rt < 0: raise SystemExit(f'{path}: invalid rt')
+                      if not r['rng_state'].strip(): raise SystemExit(f'{path}: missing rng_state')
+                  meta = pathlib.Path(path + '.metadata.txt')
+                  if not meta.exists(): raise SystemExit(f'{path}: missing metadata')
+                  md = dict(line.split('=',1) for line in meta.read_text().splitlines() if '=' in line)
+                  if md.get('history') != history: raise SystemExit(f'{path}: metadata history mismatch')
+                  if int(md.get('seed','-1')) != seed: raise SystemExit(f'{path}: metadata seed mismatch')
+                  if md.get('seed-offset') != '0': raise SystemExit(f'{path}: metadata seed offset mismatch')
+                  if md.get('fixture') != 'H2-W0.3-TRAINING-ONLY.csv': raise SystemExit(f'{path}: metadata fixture mismatch')
+              if got != set(seeds): raise SystemExit(f'{history}: seed set mismatch')
+          if any(pathlib.Path(p).name.startswith(('H-S-replication-','H-C-replication-')) for p in glob.glob(str(out/'*'))):
+              raise SystemExit('replication outputs detected during primary stage')
+          for forbidden in ['ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json','ACT-R-W0-01/H2-MATCHING-RESULTS.csv']:
+              if pathlib.Path(forbidden).exists(): raise SystemExit(f'forbidden empirical artifact exists: {forbidden}')
+          print('PRIMARY-RUNTIME-INTEGRITY-PASS')
+          PY
+
+      - name: Apply locked primary-stage evaluator
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import importlib.util, json, pathlib
+          spec = importlib.util.spec_from_file_location('h2eval','ACT-R-W0-01/evaluate-h2-matching.py')
+          mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+          primary = mod.evaluate('h2-primary-results', 'primary')
+          report = {'stage':'PRIMARY','decision':'PRIMARY PASS' if primary['overall'] else 'PRIMARY FAILURE','evaluation':primary}
+          pathlib.Path('h2-primary-results/primary-stage-evaluation.json').write_text(json.dumps(report, indent=2))
+          print(json.dumps({'component_pass':primary['component_pass'],'overall':primary['overall']}, indent=2))
+          raise SystemExit(0 if primary['overall'] else 2)
+          PY
+
+      - name: Record primary-stage boundary
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'Primary execution completed. Replication and future-condition execution are not part of this run.' > h2-primary-results/PRIMARY-STAGE-BOUNDARY.txt
+
+      - name: Upload primary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: actr-w0-h2-primary-runtime-evidence
+          path: h2-primary-results/
+          if-no-files-found: error
+          compression-level: 6
