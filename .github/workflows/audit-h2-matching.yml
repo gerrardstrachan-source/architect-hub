@@ -1,0 +1,31 @@
+name: H2 Matching Implementation Audit
+
+on:
+  push:
+    paths:
+      - 'ACT-R-W0-01/H2-MATCHING-MODEL-v0.1.lisp'
+      - 'ACT-R-W0-01/run-h2-matching.lisp'
+      - 'ACT-R-W0-01/H2-MATCHING-IMPLEMENTATION-MANIFEST-v0.1.json'
+      - 'ACT-R-W0-01/audit-h2-matching.py'
+      - '.github/workflows/audit-h2-matching.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout frozen implementation
+        uses: actions/checkout@v4
+
+      - name: Verify implementation audit
+        run: |
+          set -euo pipefail
+          python3 ACT-R-W0-01/audit-h2-matching.py
+
+      - name: Assert audit-only boundary
+        run: |
+          set -euo pipefail
+          test ! -f ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json
+          test ! -f ACT-R-W0-01/H2-MATCHING-RESULTS.csv
+          printf '%s\n' 'H2 matching runtime was not executed by this audit workflow.'
