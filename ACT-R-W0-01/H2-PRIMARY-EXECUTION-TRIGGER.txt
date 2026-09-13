@@ -1,0 +1,1 @@
+Execution trigger marker only. No scientific fixture, model, controller, evaluator, protocol, parameter, seed, history, or future-condition content is defined here.
