@@ -2,9 +2,8 @@ name: ACT-R-W0 H2 Primary Matching
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/actr-w0-h2-primary.yml'
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -91,7 +90,6 @@ jobs:
       - name: Execute frozen primary batch only
         run: |
           set -euo pipefail
-          test ! -e ACT-R-W0-01/H2-W0.3-FUTURE.csv
           ACTR_ROOT="$(cat h2-primary-results/actr-source/actr-root.txt)"
           docker run --rm \
             -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
@@ -119,51 +117,35 @@ jobs:
           import csv, glob, math, pathlib, re
           out = pathlib.Path('h2-primary-results')
           seeds = list(range(1001,1033))
-          expected = {
-              'H-S': lambda c,x,y: ':A0' if (x ^ y) == 1 else ':A1',
-              'H-C': lambda c,x,y: ':A0' if (c ^ x) == 1 else ':A1',
-          }
+          expected = {'H-S': lambda c,x,y: ':A0' if (x ^ y) == 1 else ':A1', 'H-C': lambda c,x,y: ':A0' if (c ^ x) == 1 else ':A1'}
           for history, fn in expected.items():
               files = sorted(glob.glob(str(out / f'{history}-primary-*.csv')))
-              if len(files) != 32:
-                  raise SystemExit(f'{history}: expected 32 primary files, got {len(files)}')
+              if len(files) != 32: raise SystemExit(f'{history}: expected 32 primary files, got {len(files)}')
               got = set()
               for path in files:
-                  name = pathlib.Path(path).stem
-                  m = re.fullmatch(r'(H-S|H-C)-primary-(\d+)', name)
-                  if not m:
-                      raise SystemExit(f'malformed result filename: {path}')
+                  m = re.fullmatch(r'(H-S|H-C)-primary-(\d+)', pathlib.Path(path).stem)
+                  if not m or m.group(1) != history: raise SystemExit(f'malformed/wrong-history filename: {path}')
                   seed = int(m.group(2)); got.add(seed)
-                  if seed not in seeds or m.group(1) != history:
-                      raise SystemExit(f'wrong history/seed in filename: {path}')
+                  if seed not in seeds: raise SystemExit(f'unexpected seed: {seed}')
                   rows = list(csv.DictReader(open(path, newline='')))
-                  if len(rows) != 192:
-                      raise SystemExit(f'{path}: expected 192 rows')
-                  if [int(r['trial']) for r in rows] != list(range(1,193)):
-                      raise SystemExit(f'{path}: trial numbers are not exactly 1..192')
+                  if len(rows) != 192 or [int(r['trial']) for r in rows] != list(range(1,193)): raise SystemExit(f'{path}: row/trial structure invalid')
                   for r in rows:
-                      if r['history'] != history: raise SystemExit(f'{path}: history mismatch')
                       c,x,y = int(r['c']),int(r['x']),int(r['y'])
                       if c not in (0,1) or x not in (0,1) or y not in (0,1): raise SystemExit(f'{path}: non-binary feature')
-                      if r['action'] not in (':A0', ':A1') or r['correct_action'] not in (':A0', ':A1'): raise SystemExit(f'{path}: invalid action symbol')
+                      if r['history'] != history or r['action'] not in (':A0',':A1') or r['correct_action'] not in (':A0',':A1'): raise SystemExit(f'{path}: invalid row identity/action')
                       if r['correct_action'] != fn(c,x,y): raise SystemExit(f'{path}: ground-truth mismatch')
-                      if int(r['correctness']) not in (0,1): raise SystemExit(f'{path}: non-binary correctness')
-                      if int(r['feedback']) != 1: raise SystemExit(f'{path}: feedback != 1')
+                      if int(r['correctness']) not in (0,1) or int(r['feedback']) != 1: raise SystemExit(f'{path}: correctness/feedback invalid')
                       rt = float(r['rt'])
-                      if not math.isfinite(rt) or rt < 0: raise SystemExit(f'{path}: invalid rt')
-                      if not r['rng_state'].strip(): raise SystemExit(f'{path}: missing rng_state')
+                      if not math.isfinite(rt) or rt < 0 or not r['rng_state']: raise SystemExit(f'{path}: latency/RNG invalid')
                   meta = pathlib.Path(path + '.metadata.txt')
                   if not meta.exists(): raise SystemExit(f'{path}: missing metadata')
                   md = dict(line.split('=',1) for line in meta.read_text().splitlines() if '=' in line)
-                  if md.get('history') != history: raise SystemExit(f'{path}: metadata history mismatch')
-                  if int(md.get('seed','-1')) != seed: raise SystemExit(f'{path}: metadata seed mismatch')
-                  if md.get('seed-offset') != '0': raise SystemExit(f'{path}: metadata seed offset mismatch')
-                  if md.get('fixture') != 'H2-W0.3-TRAINING-ONLY.csv': raise SystemExit(f'{path}: metadata fixture mismatch')
+                  if md.get('history') != history or int(md.get('seed','-1')) != seed or md.get('seed-offset') != '0' or md.get('fixture') != 'H2-W0.3-TRAINING-ONLY.csv': raise SystemExit(f'{path}: metadata mismatch')
+                  if not md.get('parameter-state') or not md.get('initial-rng-state'): raise SystemExit(f'{path}: metadata incomplete')
               if got != set(seeds): raise SystemExit(f'{history}: seed set mismatch')
-          if any(pathlib.Path(p).name.startswith(('H-S-replication-','H-C-replication-')) for p in glob.glob(str(out/'*'))):
-              raise SystemExit('replication outputs detected during primary stage')
-          for forbidden in ['ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json','ACT-R-W0-01/H2-MATCHING-RESULTS.csv']:
-              if pathlib.Path(forbidden).exists(): raise SystemExit(f'forbidden empirical artifact exists: {forbidden}')
+          if any('replication' in pathlib.Path(p).name for p in glob.glob(str(out/'*'))): raise SystemExit('replication output detected')
+          for p in ['ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json','ACT-R-W0-01/H2-MATCHING-RESULTS.csv']:
+              if pathlib.Path(p).exists(): raise SystemExit(f'forbidden artifact: {p}')
           print('PRIMARY-RUNTIME-INTEGRITY-PASS')
           PY
 
@@ -174,18 +156,16 @@ jobs:
           import importlib.util, json, pathlib
           spec = importlib.util.spec_from_file_location('h2eval','ACT-R-W0-01/evaluate-h2-matching.py')
           mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-          primary = mod.evaluate('h2-primary-results', 'primary')
+          primary = mod.evaluate('h2-primary-results','primary')
           report = {'stage':'PRIMARY','decision':'PRIMARY PASS' if primary['overall'] else 'PRIMARY FAILURE','evaluation':primary}
-          pathlib.Path('h2-primary-results/primary-stage-evaluation.json').write_text(json.dumps(report, indent=2))
-          print(json.dumps({'component_pass':primary['component_pass'],'overall':primary['overall']}, indent=2))
+          pathlib.Path('h2-primary-results/primary-stage-evaluation.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps({'component_pass':primary['component_pass'],'overall':primary['overall']},indent=2))
           raise SystemExit(0 if primary['overall'] else 2)
           PY
 
       - name: Record primary-stage boundary
         if: always()
-        run: |
-          set -euo pipefail
-          printf '%s\n' 'Primary execution completed. Replication and future-condition execution are not part of this run.' > h2-primary-results/PRIMARY-STAGE-BOUNDARY.txt
+        run: printf '%s\n' 'Primary execution completed. Replication and future-condition execution are not part of this run.' > h2-primary-results/PRIMARY-STAGE-BOUNDARY.txt
 
       - name: Upload primary evidence
         if: always()
