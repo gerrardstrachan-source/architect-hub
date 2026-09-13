@@ -1,0 +1,134 @@
+name: Verify E*-R Compatible Runtime
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/verify-e-star-r-runtime.yml'
+  workflow_dispatch:
+
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout architecture repository
+        uses: actions/checkout@v4
+
+      - name: Prepare pinned DORA source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --no-checkout https://github.com/AlexDoumas/BrPong_1.git /tmp/BrPong_1
+          git -C /tmp/BrPong_1 fetch --depth 1 origin 457b06969cf342582ebb164cfc9162fbacbd10cb
+          git -C /tmp/BrPong_1 checkout --detach 457b06969cf342582ebb164cfc9162fbacbd10cb
+          test "$(git -C /tmp/BrPong_1 rev-parse HEAD)" = "457b06969cf342582ebb164cfc9162fbacbd10cb"
+          test "$(git -C /tmp/BrPong_1 rev-parse HEAD:workspace/DORA.py)" = "fdb40ef14706fbd0f0cb33e201e0e1af604ee71d"
+          test "$(git -C /tmp/BrPong_1 rev-parse HEAD:workspace/basicRunDORA.py)" = "a595db84e0da73d3cfb36fb0afab44cb53116db0"
+
+      - name: Pull candidate legacy runtime image
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker pull python:2.7.18
+          docker image inspect python:2.7.18 --format '{{json .RepoDigests}}' > /tmp/image-digests.json
+          cat /tmp/image-digests.json
+
+      - name: Install pinned legacy dependencies and verify source execution
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p runtime-report
+          docker run --rm \
+            --read-only \
+            --tmpfs /tmp:exec,size=1g \
+            --tmpfs /root:exec,size=256m \
+            --tmpfs /home:exec,size=256m \
+            -e SDL_VIDEODRIVER=dummy \
+            -v /tmp/BrPong_1:/opt/BrPong_1:ro \
+            -v "$PWD/runtime-report":/opt/report \
+            python:2.7.18 \
+            bash -lc '
+              set -euxo pipefail
+              python --version
+              python -m pip --version
+              python -m pip install --no-cache-dir numpy==1.16.6 pygame==1.9.6
+              cd /opt/BrPong_1/workspace
+              python - <<"PY"
+import hashlib, os
+import numpy
+import pygame
+import DORA
+import basicRunDORA
+import buildNetwork
+import dataTypes
+import DORA_GUI
+
+expected = {
+    "DORA.py": "fdb40ef14706fbd0f0cb33e201e0e1af604ee71d",
+    "basicRunDORA.py": "a595db84e0da73d3cfb36fb0afab44cb53116db0",
+}
+for name, digest in expected.items():
+    path = os.path.join(os.getcwd(), name)
+    h = hashlib.sha1()
+    with open(path, "rb") as fh:
+        h.update(fh.read())
+    assert h.hexdigest() == digest, (name, h.hexdigest(), digest)
+
+params = DORA.parameters
+required = [
+    "asDORA", "gamma", "delta", "eta", "HebbBias",
+    "bias_retrieval_analogs", "use_relative_act", "run_order",
+    "run_cyles", "write_on_iteration", "firingOrderRule",
+    "strategic_mapping", "ignore_object_semantics", "ignore_memory_semantics",
+    "mag_decimal_precision", "dim_list", "exemplar_memory", "recent_analog_bias",
+    "lateral_input_level", "screen_width", "screen_height", "doGUI",
+    "GUI_update_rate", "starting_iteration"
+]
+missing = [k for k in required if k not in params]
+assert not missing, missing
+network = basicRunDORA.runDORA(None, params)
+assert network.firingOrderRule == "random"
+assert network.gamma == params["gamma"]
+assert network.delta == params["delta"]
+assert network.eta == params["eta"]
+assert network.HebbBias == params["HebbBias"]
+print("IMPORT_AND_CONSTRUCTION=PASS")
+print("PYTHON=", __import__("platform").python_version())
+print("NUMPY=", numpy.__version__)
+print("PYGAME=", pygame.version.ver)
+print("DORA_VERSION=", DORA.vers_number)
+print("FIRING_ORDER_RULE=", params["firingOrderRule"])
+PY
+              python -m pip freeze | sort > /opt/report/pip-freeze.txt
+              python - <<"PY" > /opt/report/runtime-fingerprint.txt
+import hashlib, json, os, platform, subprocess
+import numpy, pygame
+print("python_version=" + platform.python_version())
+print("python_executable=" + __import__("sys").executable)
+print("platform=" + platform.platform())
+print("numpy=" + numpy.__version__)
+print("pygame=" + pygame.version.ver)
+print("dora_commit=457b06969cf342582ebb164cfc9162fbacbd10cb")
+print("dora_sha1=fdb40ef14706fbd0f0cb33e201e0e1af604ee71d")
+print("basicRunDORA_sha1=a595db84e0da73d3cfb36fb0afab44cb53116db0")
+print("SDL_VIDEODRIVER=" + os.environ.get("SDL_VIDEODRIVER", ""))
+PY
+            '
+          sha256sum runtime-report/*
+
+      - name: Record runtime image fingerprint
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cp /tmp/image-digests.json runtime-report/docker-image-digests.json
+          sha256sum runtime-report/docker-image-digests.json >> runtime-report/artifact-sha256.txt
+          sha256sum runtime-report/pip-freeze.txt >> runtime-report/artifact-sha256.txt
+          sha256sum runtime-report/runtime-fingerprint.txt >> runtime-report/artifact-sha256.txt
+          cat runtime-report/artifact-sha256.txt
+
+      - name: Upload runtime verification record
+        uses: actions/upload-artifact@v4
+        with:
+          name: e-star-r-runtime-verification
+          path: runtime-report/
+          if-no-files-found: error
