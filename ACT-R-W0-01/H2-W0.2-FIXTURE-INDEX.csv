@@ -1,0 +1,11 @@
+fixture,phase,condition,n,state_exposure,source_relation,presented_transform,state_sequence_artifact
+H-S-training,training,T,192,32 per each of 6 training states,x XOR y,None,H2-W0.2-STATE-SEQUENCES.json
+H-C-training,training,T,192,32 per each of 6 training states,c XOR x,None,H2-W0.2-STATE-SEQUENCES.json
+H-S-A,future,A,96,12 per each of 8 states,x XOR y,None,H2-W0.2-STATE-SEQUENCES.json
+H-C-A,future,A,96,12 per each of 8 states,c XOR x,None,H2-W0.2-STATE-SEQUENCES.json
+H-S-B,future,B,96,12 per each of 8 states,c XOR y,None,H2-W0.2-STATE-SEQUENCES.json
+H-C-B,future,B,96,12 per each of 8 states,c XOR y,None,H2-W0.2-STATE-SEQUENCES.json
+H-S-C,future,C,96,12 per each of 8 source states,source relation, c'=1-c; x'=1-x; y'=1-y,H2-W0.2-STATE-SEQUENCES.json
+H-C-C,future,C,96,12 per each of 8 source states,source relation, c'=1-c; x'=1-x; y'=1-y,H2-W0.2-STATE-SEQUENCES.json
+H-S-D,future,D,96,12 per each of 8 states,source relation,action complement A0<->A1,H2-W0.2-STATE-SEQUENCES.json
+H-C-D,future,D,96,12 per each of 8 states,source relation,action complement A0<->A1,H2-W0.2-STATE-SEQUENCES.json
