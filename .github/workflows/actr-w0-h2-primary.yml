@@ -27,7 +27,7 @@ jobs:
           test ! -e ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json
           test ! -e ACT-R-W0-01/H2-MATCHING-RESULTS.csv
 
-      - name: Build training-only fixture
+      - name: Build history-specific training-only fixtures
         run: |
           set -euo pipefail
           rm -rf h2-primary-input h2-primary-results
@@ -35,22 +35,22 @@ jobs:
           python3 - <<'PY'
           import csv, hashlib, pathlib
           src = pathlib.Path('ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv')
-          dst = pathlib.Path('h2-primary-input/H2-W0.3-TRAINING-ONLY.csv')
           with src.open(newline='') as f:
               rows = list(csv.reader(f))
           header = rows[0]
-          data = [r for r in rows[1:] if len(r) >= 2 and r[1].strip().upper() == 'TRAINING']
-          if len(data) != 192:
-              raise SystemExit(f'expected 192 training rows, got {len(data)}')
-          if any(r[1].strip().upper() != 'TRAINING' for r in data):
-              raise SystemExit('non-training row entered derived training fixture')
-          with dst.open('w', newline='') as f:
-              w = csv.writer(f, lineterminator='\n')
-              w.writerow(header)
-              w.writerows(data)
-          digest = hashlib.sha256(dst.read_bytes()).hexdigest()
-          print(f'training_fixture_rows=192')
-          print(f'training_fixture_sha256={digest}')
+          for history in ('H-S','H-C'):
+              data = [r for r in rows[1:] if len(r) >= 2 and r[0].strip() == history and r[1].strip().upper() == 'TRAINING']
+              if len(data) != 192:
+                  raise SystemExit(f'{history}: expected 192 training rows, got {len(data)}')
+              if any(r[0].strip() != history or r[1].strip().upper() != 'TRAINING' for r in data):
+                  raise SystemExit(f'{history}: invalid row entered history-specific training fixture')
+              dst = pathlib.Path(f'h2-primary-input/H2-W0.3-TRAINING-{history}.csv')
+              with dst.open('w', newline='') as f:
+                  w = csv.writer(f, lineterminator='\n')
+                  w.writerow(header)
+                  w.writerows(data)
+              print(f'{history}_training_fixture_rows=192')
+              print(f'{history}_training_fixture_sha256=' + hashlib.sha256(dst.read_bytes()).hexdigest())
           PY
 
       - name: Acquire current ACT-R release source
@@ -107,7 +107,7 @@ jobs:
                    --load /experiment/H2-MATCHING-MODEL-v0.1.lisp \
                    --load /experiment/run-h2-matching.lisp \
                    --load /experiment/run-h2-matching-batch.lisp \
-                   --eval "(run-h2-matching-primary \"/input/H2-W0.3-TRAINING-ONLY.csv\" \"/results\")"' \
+                   --eval "(progn (h2-run-seed-list '\''H-S *h2-seeds-primary* \"/input/H2-W0.3-TRAINING-H-S.csv\" \"/results\" \"primary\") (h2-run-seed-list '\''H-C *h2-seeds-primary* \"/input/H2-W0.3-TRAINING-H-C.csv\" \"/results\" \"primary\"))"' \
             > h2-primary-results/runtime.stdout.txt 2> h2-primary-results/runtime.stderr.txt
 
       - name: Independently validate primary runtime output
