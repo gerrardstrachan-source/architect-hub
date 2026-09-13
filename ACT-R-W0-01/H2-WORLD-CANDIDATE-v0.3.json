@@ -1,0 +1,44 @@
+{
+  "world_version": "H2-WORLD-CANDIDATE-v0.3",
+  "status": "CANDIDATE-AUDITED-NOT-FROZEN",
+  "supersedes": ["H2-WORLD-CANDIDATE-v0.2"],
+  "training_order_seed": 20260916,
+  "future_order_seed": 20260917,
+  "state_space": [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],
+  "training_states": [[0,0,0],[0,0,1],[0,1,1],[1,0,0],[1,1,0],[1,1,1]],
+  "A_held_out_states": [[0,1,0],[1,0,1]],
+  "training_trials": 192,
+  "training_repetitions_per_state": 32,
+  "future_trials_per_condition": 96,
+  "future_repetitions_per_state": 12,
+  "training_histories": {
+    "H-S": {"definition":"A0 iff x XOR y = 1","A0_states":2,"A1_states":4,"A0_trials":64,"A1_trials":128},
+    "H-C": {"definition":"A0 iff c XOR x = 1","A0_states":2,"A1_states":4,"A0_trials":64,"A1_trials":128}
+  },
+  "world_level_invariants": {
+    "same_training_input_order": true,
+    "same_training_state_exposure_counts": true,
+    "same_training_trial_count": true,
+    "same_training_action_marginal": true,
+    "training_action_marginal": {"A0":64,"A1":128},
+    "same_training_feature_marginals": {"c":{"0":96,"1":96},"x":{"0":96,"1":96},"y":{"0":96,"1":96}},
+    "same_future_source_state_order": true,
+    "same_future_state_exposure_counts": true,
+    "same_future_trial_count": true,
+    "no_relation_labels_presented": true,
+    "no_precomputed_xor_feature_presented": true
+  },
+  "fixtures": {
+    "state_sequences": "ACT-R-W0-01/H2-W0.3-STATE-SEQUENCES.json",
+    "state_sequences_sha256": "2ab18d1acc75f85cdf017f11507bb1445a1bfc9eae002a8c580055a13615a68c",
+    "combined_csv_local_artifact_sha256": "75db87c5c0d3ec8fca8033ea7ff348d4ded602347612cce9fe6e6ac0343b7941",
+    "training_state_sequence_sha256": "5fb17bee3cca914261cd2fb6db6e5cf0411b63425aca9aec4db0639343e3d9e3",
+    "future_state_sequence_sha256": "285809022276e6f2789a8b94f79f6a0245238fba6c6960213254ac24dd951451"
+  },
+  "interpretation": "Matched relational-history transfer comparison; H-C is not a no-structure control.",
+  "A_definition": "Held-out recombinative extension: states 010 and 101 are absent from training and first appear in A; source relation is unchanged.",
+  "B_definition": "Structural recombination: A0 iff c XOR y = 1.",
+  "C_definition": "Surface bijection c'=1-c, x'=1-x, y'=1-y; source relation preserved.",
+  "D_definition": "Complement source correct-action mapping.",
+  "status_note": "World repaired for exact training action-marginal equality. Immediate-performance matching still requires ACT-R model-level testing. No prediction, implementation, fixture freeze, or execution authorized."
+}
