@@ -5,6 +5,7 @@
 (defparameter *h2-seeds-replication* '(2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 2024 2025 2026 2027 2028 2029 2030 2031 2032))
 (defparameter *h2-history* nil)
 (defparameter *h2-output-file* nil)
+(defparameter *h2-metadata-file* nil)
 (defparameter *h2-trials* nil)
 (defparameter *h2-index* 0)
 (defparameter *h2-current-trial* nil)
@@ -50,14 +51,10 @@
                  (y (parse-int (nth 6 f)))
                  (correct (intern (string-upcase (trim-field (nth 10 f))) :keyword))
                  (expected (h2-expected-action history c x y)))
-            (unless (string= h-name (symbol-name history))
-              (error "H2 fixture rejected: history mismatch."))
-            (unless (string= phase "TRAINING")
-              (error "H2 matching boundary violated: non-training row encountered."))
-            (unless (and (member c '(0 1)) (member x '(0 1)) (member y '(0 1)))
-              (error "H2 fixture rejected: non-binary feature value."))
-            (unless (eql correct expected)
-              (error "H2 fixture rejected: ground-truth contingency mismatch at trial ~D." trial))
+            (unless (string= h-name (symbol-name history)) (error "H2 fixture rejected: history mismatch."))
+            (unless (string= phase "TRAINING") (error "H2 matching boundary violated: non-training row encountered."))
+            (unless (and (member c '(0 1)) (member x '(0 1)) (member y '(0 1))) (error "H2 fixture rejected: non-binary feature value."))
+            (unless (eql correct expected) (error "H2 fixture rejected: ground-truth contingency mismatch at trial ~D." trial))
             (incf (gethash (format nil "~D~D~D" c x y) state-counts 0))
             (if (eql correct :A0) (incf a0) (incf a1))
             (if (= c 0) (incf c0) (incf c1))
@@ -72,11 +69,14 @@
       (dolist (state '("000" "001" "011" "100" "110" "111"))
         (unless (= (gethash state state-counts 0) 32) (error "H2 fixture rejected: required state ~A missing or miscounted." state)))
       (unless (and (= a0 64) (= a1 128)) (error "H2 fixture rejected: action marginal is ~D/~D, expected 64/128." a0 a1))
-      (unless (and (= c0 96) (= c1 96) (= x0 96) (= x1 96) (= y0 96) (= y1 96))
-        (error "H2 fixture rejected: feature marginals are not 96/96."))
+      (unless (and (= c0 96) (= c1 96) (= x0 96) (= x1 96) (= y0 96) (= y1 96)) (error "H2 fixture rejected: feature marginals are not 96/96."))
       rows)))
 
 (defun h2-rng-state () (no-output (sgp :seed)))
+(defun h2-write-metadata ()
+  (with-open-file (out *h2-metadata-file* :direction :output :if-exists :supersede :if-does-not-exist :create)
+    (format out "history=~A~%seed=~D~%seed-offset=0~%fixture=~A~%parameter-state=~S~%initial-rng-state=~S~%" *h2-history* *h2-seed* *h2-required-fixture-name* (sgp) (h2-rng-state))))
+
 (defun h2-action (state-code action production)
   (declare (ignore state-code))
   (unless *h2-current-trial* (error "H2 action occurred without active trial."))
@@ -87,15 +87,13 @@
     (push (list :trial *h2-current-trial* :history *h2-history*
                 :c (getf row :c) :x (getf row :x) :y (getf row :y)
                 :production production :action action :correct-action truth
-                :correctness correctness :feedback 1 :rt rt
-                :rng-state (h2-rng-state)) *h2-log*)
+                :correctness correctness :feedback 1 :rt rt :rng-state (h2-rng-state)) *h2-log*)
     (trigger-reward (if (= correctness 1) 1 0))
     (schedule-event-relative 0.001 'h2-finish-trial :maintenance t :priority :min)))
 
 (defun h2-present-row (row)
   (setf *h2-ready-time* (mp-time))
-  (goal-focus-fct
-   (intern (format nil "G-~D~D~D" (getf row :c) (getf row :x) (getf row :y)) :cl-user)))
+  (goal-focus-fct (intern (format nil "G-~D~D~D" (getf row :c) (getf row :x) (getf row :y)) :cl-user)))
 
 (defun h2-write-output ()
   (with-open-file (out *h2-output-file* :direction :output :if-exists :supersede :if-does-not-exist :create)
@@ -108,11 +106,8 @@
 
 (defun h2-finish-trial ()
   (if (< *h2-index* (length *h2-trials*))
-      (progn (incf *h2-index*)
-             (setf *h2-current-trial* *h2-index*)
-             (h2-present-row (nth (1- *h2-index*) *h2-trials*)))
-      (progn (setf *h2-current-trial* nil)
-             (h2-write-output)
+      (progn (incf *h2-index*) (setf *h2-current-trial* *h2-index*) (h2-present-row (nth (1- *h2-index*) *h2-trials*)))
+      (progn (setf *h2-current-trial* nil) (h2-write-output)
              (format t "H2-MATCHING-COMPLETE history=~A seed=~D trials=~D~%" *h2-history* *h2-seed* (length *h2-trials*)))))
 
 (defun run-h2-history-seed (history seed input-file output-file)
@@ -121,9 +116,10 @@
   (reset)
   (sgp-fct (list :seed (list seed 0)))
   (setf *h2-history* history *h2-output-file* output-file
+        *h2-metadata-file* (concatenate 'string output-file ".metadata.txt")
         *h2-trials* (read-training-fixture input-file history)
         *h2-index* 1 *h2-current-trial* 1 *h2-log* nil *h2-seed* seed *h2-ready-time* nil)
+  (h2-write-metadata)
   (h2-present-row (first *h2-trials*))
   (run 5000)
-  (unless (null *h2-current-trial*)
-    (error "H2 run ended before all training trials completed.")))
+  (unless (null *h2-current-trial*) (error "H2 run ended before all training trials completed.")))
