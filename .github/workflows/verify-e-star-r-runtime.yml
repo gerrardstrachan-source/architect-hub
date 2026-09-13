@@ -1,0 +1,64 @@
+name: Verify E*-R Compatible Runtime
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/verify-e-star-r-runtime.yml'
+      - 'runtime-harness/e_star_r_runtime_probe.py'
+      - 'runtime-harness/e_star_r_execution_identity_probe.py'
+  workflow_dispatch:
+
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout architecture repository
+        uses: actions/checkout@v4
+
+      - name: Prepare pinned DORA source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --no-checkout https://github.com/AlexDoumas/BrPong_1.git /tmp/BrPong_1
+          git -C /tmp/BrPong_1 fetch --depth 1 origin 457b06969cf342582ebb164cfc9162fbacbd10cb
+          git -C /tmp/BrPong_1 checkout --detach 457b06969cf342582ebb164cfc9162fbacbd10cb
+          test "$(git -C /tmp/BrPong_1 rev-parse HEAD)" = "457b06969cf342582ebb164cfc9162fbacbd10cb"
+          test "$(git -C /tmp/BrPong_1 rev-parse HEAD:workspace/DORA.py)" = "fdb40ef14706fbd0f0cb33e201e0e1af604ee71d"
+          test "$(git -C /tmp/BrPong_1 rev-parse HEAD:workspace/basicRunDORA.py)" = "a595db84e0da73d3cfb36fb0afab44cb53116db0"
+
+      - name: Pull candidate legacy runtime image
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker pull python:2.7.18
+          docker image inspect python:2.7.18 --format '{{json .RepoDigests}}' > /tmp/image-digests.json
+          cat /tmp/image-digests.json
+
+      - name: Verify source execution without experiment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p runtime-report
+          docker run --rm \
+            --read-only \
+            --tmpfs /tmp:exec,size=1g \
+            --tmpfs /root:exec,size=256m \
+            --tmpfs /home:exec,size=256m \
+            -e SDL_VIDEODRIVER=dummy \
+            -e PYTHONPATH=/opt/BrPong_1/workspace \
+            -v /tmp/BrPong_1:/opt/BrPong_1:ro \
+            -v "$PWD/runtime-harness/e_star_r_runtime_probe.py":/opt/e_star_r_runtime_probe.py:ro \
+            -v "$PWD/runtime-harness/e_star_r_execution_identity_probe.py":/opt/e_star_r_execution_identity_probe.py:ro \
+            -v "$PWD/runtime-report":/opt/report \
+            python:2.7.18 \
+            bash -lc 'set -euxo pipefail; python --version; python -m pip --version; python -m pip install --no-cache-dir numpy==1.16.6 pygame==1.9.6; cd /opt/BrPong_1/workspace; python /opt/e_star_r_runtime_probe.py > /opt/report/runtime-fingerprint.txt; python /opt/e_star_r_execution_identity_probe.py > /opt/report/execution-identity-fingerprint.txt; python -m pip freeze | sort > /opt/report/pip-freeze.txt'
+          cp /tmp/image-digests.json runtime-report/docker-image-digests.json
+          sha256sum runtime-report/* | tee runtime-report/artifact-sha256.txt
+
+      - name: Upload runtime verification record
+        uses: actions/upload-artifact@v4
+        with:
+          name: e-star-r-runtime-verification
+          path: runtime-report/
+          if-no-files-found: error
