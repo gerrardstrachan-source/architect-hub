@@ -1,0 +1,98 @@
+name: H2 ACT-R Implementation Validation
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ACT-R-W0-01/H2-MATCHING-MODEL-v0.1.lisp'
+      - 'ACT-R-W0-01/run-h2-matching.lisp'
+      - 'ACT-R-W0-01/audit-h2-matching.py'
+      - 'ACT-R-W0-01/evaluate-h2-matching.py'
+      - 'ACT-R-W0-01/H2-MATCHING-IMPLEMENTATION-MANIFEST-v0.1.json'
+      - '.github/workflows/validate-h2-actr-implementation.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout implementation
+        uses: actions/checkout@v4
+
+      - name: Final source audit
+        run: |
+          set -euo pipefail
+          python3 ACT-R-W0-01/audit-h2-matching.py
+
+      - name: Acquire current ACT-R release source
+        run: |
+          set -euo pipefail
+          mkdir -p "$PWD/h2-validation/actr-source"
+          curl --ciphers 'DEFAULT:@SECLEVEL=1' -fsSL https://act-r.psy.cmu.edu/actr7.x/actr7.container.zip \
+            -o h2-validation/actr-source/actr7.container.zip
+          rm -rf h2-validation/actr-source/extracted
+          mkdir -p h2-validation/actr-source/extracted
+          unzip -q h2-validation/actr-source/actr7.container.zip \
+            -d h2-validation/actr-source/extracted
+          ACTR_ROOT="$(find h2-validation/actr-source/extracted -type f -name load-act-r.lisp -printf '%h\n' | head -n 1)"
+          test -n "$ACTR_ROOT"
+          printf '%s\n' "$ACTR_ROOT" > h2-validation/actr-source/actr-root.txt
+          grep -E '^\(defvar \*actr-(architecture|major|minor)-version-string\*' \
+            "$ACTR_ROOT/framework/version-string.lisp" > h2-validation/actr-source/version-definitions.txt
+          grep -Eq '\*actr-major-version-string\* "31"' h2-validation/actr-source/version-definitions.txt
+          grep -Eq '\*actr-minor-version-string\* "4"' h2-validation/actr-source/version-definitions.txt
+          sha256sum h2-validation/actr-source/actr7.container.zip > h2-validation/actr-source/actr7.container.zip.sha256
+
+      - name: Verify ACT-R 7.31.4 runtime
+        run: |
+          set -euo pipefail
+          ACTR_ROOT="$(cat h2-validation/actr-source/actr-root.txt)"
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(progn (init-des) (mp-print-versions))"' \
+            > h2-validation/runtime-version.txt 2> h2-validation/runtime-version.stderr.txt
+          cat h2-validation/runtime-version.txt
+          grep -Eq 'Software[[:space:]]*: 7\.31\.4-' h2-validation/runtime-version.txt
+
+      - name: Load and compile H2 matching implementation only
+        run: |
+          set -euo pipefail
+          ACTR_ROOT="$(cat h2-validation/actr-source/actr-root.txt)"
+          mkdir -p "$PWD/ACT-R-W0-01/h2-compile-check"
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            -v "$PWD/ACT-R-W0-01:/experiment:ro" \
+            -v "$PWD/ACT-R-W0-01/h2-compile-check:/results" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && \
+                 sbcl --non-interactive \
+                   --load /home/actr/quicklisp/setup.lisp \
+                   --load /tmp/actr7.x/load-act-r.lisp \
+                   --eval "(init-des)" \
+                   --load /experiment/H2-MATCHING-MODEL-v0.1.lisp \
+                   --load /experiment/run-h2-matching.lisp \
+                   --eval "(format t \"H2-ACTR-LOAD-COMPILE-PASS~%\")"' \
+            > h2-validation/load-compile.stdout.txt 2> h2-validation/load-compile.stderr.txt
+          cat h2-validation/load-compile.stdout.txt
+          test ! -s h2-validation/load-compile.stderr.txt || cat h2-validation/load-compile.stderr.txt
+          grep -Fq 'H2-ACTR-LOAD-COMPILE-PASS' h2-validation/load-compile.stdout.txt
+
+      - name: Assert no empirical execution occurred
+        run: |
+          set -euo pipefail
+          test ! -e h2-results/matching-decision.json
+          test ! -e ACT-R-W0-01/H2-MATCHING-PREDICTIONS.json
+          test ! -e ACT-R-W0-01/H2-MATCHING-RESULTS.csv
+          printf '%s\n' 'H2 implementation validation completed without matching execution or future prediction.'
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-actr-implementation-validation
+          path: h2-validation/
