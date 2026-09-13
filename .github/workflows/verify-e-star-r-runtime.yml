@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/verify-e-star-r-runtime.yml'
       - 'runtime-harness/e_star_r_runtime_probe.py'
+      - 'runtime-harness/e_star_r_execution_identity_probe.py'
   workflow_dispatch:
 
 jobs:
@@ -48,9 +49,10 @@ jobs:
             -e PYTHONPATH=/opt/BrPong_1/workspace \
             -v /tmp/BrPong_1:/opt/BrPong_1:ro \
             -v "$PWD/runtime-harness/e_star_r_runtime_probe.py":/opt/e_star_r_runtime_probe.py:ro \
+            -v "$PWD/runtime-harness/e_star_r_execution_identity_probe.py":/opt/e_star_r_execution_identity_probe.py:ro \
             -v "$PWD/runtime-report":/opt/report \
             python:2.7.18 \
-            bash -lc 'set -euxo pipefail; python --version; python -m pip --version; python -m pip install --no-cache-dir numpy==1.16.6 pygame==1.9.6; cd /opt/BrPong_1/workspace; python /opt/e_star_r_runtime_probe.py > /opt/report/runtime-fingerprint.txt; python -m pip freeze | sort > /opt/report/pip-freeze.txt'
+            bash -lc 'set -euxo pipefail; python --version; python -m pip --version; python -m pip install --no-cache-dir numpy==1.16.6 pygame==1.9.6; cd /opt/BrPong_1/workspace; python /opt/e_star_r_runtime_probe.py > /opt/report/runtime-fingerprint.txt; python /opt/e_star_r_execution_identity_probe.py > /opt/report/execution-identity-fingerprint.txt; python -m pip freeze | sort > /opt/report/pip-freeze.txt'
           cp /tmp/image-digests.json runtime-report/docker-image-digests.json
           sha256sum runtime-report/* | tee runtime-report/artifact-sha256.txt
 
