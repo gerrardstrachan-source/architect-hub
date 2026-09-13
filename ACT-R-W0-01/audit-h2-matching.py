@@ -7,6 +7,7 @@ EXPECTED = {
     'fixture': '10dc5cfb8a14774d77e951e106c575e289c15bf5503c611ec420c997ae33d32d',
     'model_blob_sha': 'b975c98274cd78867ed0c5dd0ea8d84189a861d9',
     'controller_blob_sha': '58cde21131cee94089bf14ab9ccbf9d4bb838396',
+    'evaluator_blob_sha': '61f8614abaf8b4253d03600f340f2df7ff4b1b8c',
 }
 PRIMARY = list(range(1001,1033))
 REPLICATION = list(range(2001,2033))
@@ -23,7 +24,8 @@ def main():
     manifest_path = ROOT / 'H2-MATCHING-IMPLEMENTATION-MANIFEST-v0.1.json'
     model_path = ROOT / 'H2-MATCHING-MODEL-v0.1.lisp'
     runner_path = ROOT / 'run-h2-matching.lisp'
-    if not all(p.exists() for p in (manifest_path, model_path, runner_path)):
+    evaluator_path = ROOT / 'evaluate-h2-matching.py'
+    if not all(p.exists() for p in (manifest_path, model_path, runner_path, evaluator_path)):
         fail('required implementation artifact missing')
     manifest = json.loads(manifest_path.read_text())
     pre = manifest['pre_implementation']
@@ -37,14 +39,19 @@ def main():
         fail('manifest model blob SHA mismatch')
     if manifest['implementation']['controller_blob_sha'] != EXPECTED['controller_blob_sha']:
         fail('manifest controller blob SHA mismatch')
+    if manifest['implementation']['audit_blob_sha'] != git_blob_sha(__file__):
+        fail('manifest audit blob SHA mismatch')
     if git_blob_sha(model_path) != EXPECTED['model_blob_sha']:
         fail('checked-out model blob SHA mismatch')
     if git_blob_sha(runner_path) != EXPECTED['controller_blob_sha']:
         fail('checked-out controller blob SHA mismatch')
+    if git_blob_sha(evaluator_path) != EXPECTED['evaluator_blob_sha']:
+        fail('checked-out evaluator blob SHA mismatch')
     if manifest['seeds']['primary'] != PRIMARY or manifest['seeds']['replication'] != REPLICATION:
         fail('seed policy mismatch')
     model = model_path.read_text()
     runner = runner_path.read_text()
+    evaluator = evaluator_path.read_text()
     for required in [':ult t', ':esc t', ':ul t', ':alpha 0.2', ':iu 0', ':egs 0', ':er t', ':epl nil', 'chunk-type h2-goal c x y']:
         if required not in model:
             fail('missing frozen declaration: ' + required)
@@ -64,9 +71,12 @@ def main():
     if 'future fixture' in runner.lower() or 'a_to_d_forward_prediction_generated' in runner.lower():
         fail('future prediction/access path detected')
     for phrase in ['select best seed', 'remove seed', 'choose seed', 'widen tolerance', 'replace history', 'parameter sweep', 'grid search']:
-        if phrase in (runner + model).lower():
+        if phrase in (runner + model + evaluator).lower():
             fail('post-hoc selection/tuning path detected: ' + phrase)
-    print('AUDIT PASS: pre-lock SHAs, checked-out implementation identities, learner representation, frozen mechanisms/parameters, exact training boundary, exact sequence, contingency validation, timing/reward instrumentation, and post-hoc prohibition checks passed')
+    for marker in ['EXPECTED_HEADER', 'load_metadata', 'trial != idx', 'feedback != 1', 'math.isfinite', 'rng_state']:
+        if marker not in evaluator:
+            fail('runtime-output integrity validation missing: ' + marker)
+    print('AUDIT PASS: pre-lock SHAs, checked-out implementation identities, learner representation, frozen mechanisms/parameters, exact training boundary, exact sequence, contingency validation, timing/reward instrumentation, independent evaluator identity, runtime-output integrity validation, and post-hoc prohibition checks passed')
 
 if __name__ == '__main__':
     main()
