@@ -1,0 +1,79 @@
+name: Materialize H2 v0.3 Fixtures
+
+on:
+  push:
+    paths:
+      - 'ACT-R-W0-01/H2-W0.3-STATE-SEQUENCES.json'
+      - '.github/workflows/materialize-h2-v03-fixtures.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize complete row-level CSV
+        shell: python
+        run: |
+          import csv, hashlib, json
+          from pathlib import Path
+
+          root = Path('ACT-R-W0-01')
+          manifest = json.loads((root / 'H2-W0.3-STATE-SEQUENCES.json').read_text())
+          code_map = {int(k): tuple(v) for k, v in manifest['state_code_map'].items()}
+          training = [int(x) for x in manifest['sequences']['training']]
+          future = [int(x) for x in manifest['sequences']['future']]
+
+          rules = {
+              'H-S-training': lambda c,x,y: 'A0' if (x ^ y) == 1 else 'A1',
+              'H-C-training': lambda c,x,y: 'A0' if (c ^ x) == 1 else 'A1',
+          }
+
+          rows = []
+          for history in ('H-S', 'H-C'):
+              rule = rules[f'{history}-training']
+              for i, code in enumerate(training, 1):
+                  c,x,y = code_map[code]
+                  rows.append([history,'training','T',i,c,x,y,c,x,y,rule(c,x,y)])
+              for condition in ('A','B','C','D'):
+                  for i, source_code in enumerate(future, 1):
+                      c,x,y = code_map[source_code]
+                      pc,px,py = c,x,y
+                      if condition == 'B':
+                          action = 'A0' if (c ^ y) == 1 else 'A1'
+                      elif condition == 'C':
+                          pc,px,py = 1-c,1-x,1-y
+                          action = rule(c,x,y)
+                      elif condition == 'D':
+                          base = rule(c,x,y)
+                          action = 'A1' if base == 'A0' else 'A0'
+                      else:
+                          action = rule(c,x,y)
+                      rows.append([history,'future',condition,i,c,x,y,pc,px,py,action])
+
+          out = root / 'H2-W0.3-COMPLETE-FIXTURES.csv'
+          with out.open('w', newline='') as f:
+              w = csv.writer(f, lineterminator='\n')
+              w.writerow(['history','phase','condition','trial','source_c','source_x','source_y','present_c','present_x','present_y','correct_action'])
+              w.writerows(rows)
+
+          assert len(rows) == 1152
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          print('rows=', len(rows), 'sha256=', digest)
+
+      - name: Record canonical CSV digest
+        shell: bash
+        run: |
+          sha256sum ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv | tee ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.sha256
+
+      - name: Commit generated fixture
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.csv ACT-R-W0-01/H2-W0.3-COMPLETE-FIXTURES.sha256
+          git diff --cached --quiet && exit 0
+          git commit -m 'Materialize complete H2 v0.3 fixture CSV'
+          git push
