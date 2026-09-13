@@ -81,15 +81,28 @@ jobs:
         run: |
           set -euo pipefail
           ACTR_ROOT="$(cat h2-primary-results/actr-source/actr-root.txt)"
+          # Controller requires the exact basename H2-W0.3-TRAINING-ONLY.csv.
+          # Run H-S and H-C in separate containers so each history-specific fixture
+          # occupies that exact container path. No future-condition rows are mounted.
           docker run --rm \
             -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
             -v "$PWD/ACT-R-W0-01/H2-MATCHING-MODEL-v0.1.lisp:/experiment/H2-MATCHING-MODEL-v0.1.lisp:ro" \
             -v "$PWD/ACT-R-W0-01/run-h2-matching.lisp:/experiment/run-h2-matching.lisp:ro" \
-            -v "$PWD/ACT-R-W0-01/run-h2-matching-batch.lisp:/experiment/run-h2-matching-batch.lisp:ro" \
-            -v "$PWD/h2-primary-input:/input:ro" \
+            -v "$PWD/h2-primary-input/H2-W0.3-TRAINING-H-S.csv:/input/H2-W0.3-TRAINING-ONLY.csv:ro" \
             -v "$PWD/h2-primary-results:/results" \
             --entrypoint sh db30/act-r-container \
-            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && sbcl --non-interactive --load /home/actr/quicklisp/setup.lisp --load /tmp/actr7.x/load-act-r.lisp --eval "(progn (init-des) (echo-act-r-output) (mp-print-versions))" --load /experiment/H2-MATCHING-MODEL-v0.1.lisp --load /experiment/run-h2-matching.lisp --load /experiment/run-h2-matching-batch.lisp --eval "(progn (h2-run-seed-list '\''H-S *h2-seeds-primary* \"/input/H2-W0.3-TRAINING-H-S.csv\" \"/results\" \"primary\") (h2-run-seed-list '\''H-C *h2-seeds-primary* \"/input/H2-W0.3-TRAINING-H-C.csv\" \"/results\" \"primary\"))"' > h2-primary-results/runtime.stdout.txt 2> h2-primary-results/runtime.stderr.txt
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && sbcl --non-interactive --load /home/actr/quicklisp/setup.lisp --load /tmp/actr7.x/load-act-r.lisp --eval "(progn (init-des) (echo-act-r-output) (mp-print-versions))" --load /experiment/H2-MATCHING-MODEL-v0.1.lisp --load /experiment/run-h2-matching.lisp --eval "(h2-run-seed-list '\''H-S *h2-seeds-primary* \"/input/H2-W0.3-TRAINING-ONLY.csv\" \"/results\" \"primary\")"' \
+            > h2-primary-results/runtime-H-S.stdout.txt 2> h2-primary-results/runtime-H-S.stderr.txt
+
+          docker run --rm \
+            -v "$PWD/$ACTR_ROOT:/current-actr:ro" \
+            -v "$PWD/ACT-R-W0-01/H2-MATCHING-MODEL-v0.1.lisp:/experiment/H2-MATCHING-MODEL-v0.1.lisp:ro" \
+            -v "$PWD/ACT-R-W0-01/run-h2-matching.lisp:/experiment/run-h2-matching.lisp:ro" \
+            -v "$PWD/h2-primary-input/H2-W0.3-TRAINING-H-C.csv:/input/H2-W0.3-TRAINING-ONLY.csv:ro" \
+            -v "$PWD/h2-primary-results:/results" \
+            --entrypoint sh db30/act-r-container \
+            -lc 'rm -rf /tmp/actr7.x && cp -a /current-actr /tmp/actr7.x && sbcl --non-interactive --load /home/actr/quicklisp/setup.lisp --load /tmp/actr7.x/load-act-r.lisp --eval "(progn (init-des) (echo-act-r-output) (mp-print-versions))" --load /experiment/H2-MATCHING-MODEL-v0.1.lisp --load /experiment/run-h2-matching.lisp --eval "(h2-run-seed-list '\''H-C *h2-seeds-primary* \"/input/H2-W0.3-TRAINING-ONLY.csv\" \"/results\" \"primary\")"' \
+            > h2-primary-results/runtime-H-C.stdout.txt 2> h2-primary-results/runtime-H-C.stderr.txt
 
       - name: Independently validate primary runtime output
         run: |
