@@ -26,7 +26,8 @@ for name, digest in EXPECTED.items():
 # DORA.py is an interactive executable and enters its MainMenu loop at module
 # level. Leave the pinned source untouched. Load its declarations/definitions
 # into a module namespace while excluding only that interactive entry-point
-# block in memory.
+# block in memory. dont_inherit=True prevents this probe's future flags from
+# changing the semantics of the pinned Python-2 source during compilation.
 source_path = os.path.join(workspace, "DORA.py")
 with open(source_path, "rb") as fh:
     source_text = fh.read().decode("utf-8")
@@ -38,7 +39,7 @@ module = types.ModuleType("DORA")
 module.__file__ = source_path
 module.__package__ = ""
 sys.modules["DORA"] = module
-exec(compile(controlled_text, source_path + "::controlled-load", "exec"), module.__dict__)
+exec(compile(controlled_text, source_path + "::controlled-load", "exec", dont_inherit=True), module.__dict__)
 
 import DORA
 import basicRunDORA
