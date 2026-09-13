@@ -1,0 +1,56 @@
+{
+  "world_version": "H2-WORLD-CANDIDATE-v0.1",
+  "status": "CANDIDATE-NOT-FROZEN",
+  "training_order_seed": 20260916,
+  "future_order_seed": 20260917,
+  "training_trials": 192,
+  "future_trials_per_condition": 96,
+  "state_space": [
+    {"c":0,"x":0,"y":0},{"c":0,"x":0,"y":1},{"c":0,"x":1,"y":0},{"c":0,"x":1,"y":1},
+    {"c":1,"x":0,"y":0},{"c":1,"x":0,"y":1},{"c":1,"x":1,"y":0},{"c":1,"x":1,"y":1}
+  ],
+  "training_histories": {
+    "H-S": {
+      "definition": "correct action = A0 iff x XOR y = 1",
+      "fixture_hash": "72fc6345f2fb58eb2957b23531f01d72c4b042c0b3c96bdf7c5e1637d40bbbc1"
+    },
+    "H-C": {
+      "definition": "correct action = A0 iff c XOR x = 1",
+      "fixture_hash": "070f5b91e8939058de8087f4b49ca5b3c43006fdef2f24b4d8e2220e2ca5e0a2"
+    }
+  },
+  "future_conditions": {
+    "A": {
+      "definition": "same source relation; new frozen presentation order",
+      "H-S_fixture_hash": "dd4e7ebbde70efdfafdb4f69a75037a6f910a974c4d0e8612b0cb359def360a0",
+      "H-C_fixture_hash": "4d7f768671910828cd327a2921edbcd7f186400b8200de63d75bceccf8044f25"
+    },
+    "B": {
+      "definition": "structural recombination: c XOR y",
+      "H-S_fixture_hash": "63e52a8b937fb572117776a86e20a3e5a931cd224d452275dc71b0816a57da55",
+      "H-C_fixture_hash": "63e52a8b937fb572117776a86e20a3e5a931cd224d452275dc71b0816a57da55"
+    },
+    "C": {
+      "definition": "surface transformation: invert all binary feature symbols at presentation; ground truth preserves source relation under inverse encoding",
+      "H-S_fixture_hash": "8d5ac57edb0226fcee1ed79eecd2e6aec110657fd655bfda20ef083318fddc79",
+      "H-C_fixture_hash": "418ff116fbc99b87aab9d34b15d268690ec80c496095d3953ae8cf33ad6874ca"
+    },
+    "D": {
+      "definition": "structural conflict: complement source action mapping",
+      "H-S_fixture_hash": "165e02f9179a674fba419277d0b6746234b1c0ec00458436b64dcd437be77758",
+      "H-C_fixture_hash": "f7d0140ea29834af797df8be8cd01783ddc2ca8c892c62c0e455ddc9b43d58ba"
+    }
+  },
+  "construction_constraints": {
+    "same_training_input_order": true,
+    "same_state_space": true,
+    "same_training_trial_count": true,
+    "same_future_trial_count": true,
+    "same_action_cardinality": true,
+    "same_binary_feature_cardinality": true,
+    "no_relation_labels_presented": true,
+    "no_precomputed_xor_feature_presented": true,
+    "no_actr_state_assumptions_encoded": true
+  },
+  "status_note": "Candidate world construction for adversarial review. These hashes are candidate hashes, not frozen experimental hashes. Immediate-performance matching and ACT-R-state equivalence remain empirical/model-level questions and are not certified by this artifact."
+}
