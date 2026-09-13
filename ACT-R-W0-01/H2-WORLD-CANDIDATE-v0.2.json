@@ -1,0 +1,76 @@
+{
+  "world_version": "H2-WORLD-CANDIDATE-v0.2",
+  "status": "CANDIDATE-AUDITED-NOT-FROZEN",
+  "training_order_seed": 20260916,
+  "future_order_seed": 20260917,
+  "state_space": [
+    [0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
+    [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]
+  ],
+  "training_states": [
+    [0, 0, 0], [0, 1, 0], [0, 1, 1],
+    [1, 0, 1], [1, 1, 0], [1, 1, 1]
+  ],
+  "A_held_out_states": [[0, 0, 1], [1, 0, 0]],
+  "training_trials": 192,
+  "future_trials_per_condition": 96,
+  "training_repetitions_per_state": 32,
+  "future_repetitions_per_state": 12,
+  "training_histories": {
+    "H-S": {
+      "definition": "A0 iff x XOR y = 1",
+      "fixture": "ACT-R-W0-01/H-S-training-v02.csv",
+      "sha256": "dbd02cdec9e7a19719234582ddcaa2c58c1d449e9b84e56be068dbda1bceb8ba"
+    },
+    "H-C": {
+      "definition": "A0 iff c XOR x = 1",
+      "fixture": "ACT-R-W0-01/H-C-training-v02.csv",
+      "sha256": "edb8caef56ea2172f2d8bb719027f1f8aacf5241b9cbd5277eec5e380753fac1"
+    }
+  },
+  "future_conditions": {
+    "A": {
+      "definition": "held-out joint states under the same source relation",
+      "novel_component": "The joint states (0,0,1) and (1,0,0) are absent from training and first appear in A.",
+      "H-S_fixture": "ACT-R-W0-01/H-S-A-v02.csv",
+      "H-C_fixture": "ACT-R-W0-01/H-C-A-v02.csv",
+      "H-S_sha256": "5fc8d3c24aec251b568988727aa1ec93dd5a221bd610734ede192a46f2fbbe21",
+      "H-C_sha256": "b311c8f44aaa3dcf85549a4744867577e050e35a10cfc40ca049dcb08e7c85ea"
+    },
+    "B": {
+      "definition": "structural recombination: A0 iff c XOR y = 1",
+      "H-S_fixture": "ACT-R-W0-01/H-S-B-v02.csv",
+      "H-C_fixture": "ACT-R-W0-01/H-C-B-v02.csv",
+      "H-S_sha256": "904dac23a09931008018a157c81f38e60d93bb685df1d51143537376dd62ba40",
+      "H-C_sha256": "5cceadff821e8dffb7c0c9e7f864da4c52f865fc742ffb1bcbcae934c0cfa90e"
+    },
+    "C": {
+      "definition": "surface bijection c->1-c, x->1-x, y->1-y; source relation preserved",
+      "H-S_fixture": "ACT-R-W0-01/H-S-C-v02.csv",
+      "H-C_fixture": "ACT-R-W0-01/H-C-C-v02.csv",
+      "H-S_sha256": "4a6181d35d4374d0c754df5cbd7af64fcc0ffa4dbda28ff84733ba41e649b3aa",
+      "H-C_sha256": "880d9ccfddfdf85e7b47a2dbdc5caabb106192ea80d5eafa93de87683c76048d"
+    },
+    "D": {
+      "definition": "complement source action mapping",
+      "H-S_fixture": "ACT-R-W0-01/H-S-D-v02.csv",
+      "H-C_fixture": "ACT-R-W0-01/H-C-D-v02.csv",
+      "H-S_sha256": "ca904da4d4a20547b1a4f9ef44b00e51a92ba9423cc9724f5c5f69ffbf76a89d",
+      "H-C_sha256": "9ae0e4f8a33c0cb98edbcfc52d8dbf32ebbbefd1fff6fcbba30843aaf1c6c416"
+    }
+  },
+  "world_level_invariants": {
+    "same_training_input_order": true,
+    "same_training_state_exposure_counts": true,
+    "same_training_trial_count": true,
+    "same_training_action_marginal": true,
+    "same_future_input_order_before_C": true,
+    "same_future_state_exposure_counts": true,
+    "same_future_trial_count": true,
+    "same_future_action_marginal": true,
+    "no_relation_labels_presented": true,
+    "no_precomputed_xor_feature_presented": true
+  },
+  "interpretation": "H-S versus H-C is a matched relational-history transfer comparison, not structure-versus-no-structure.",
+  "note": "Candidate v0.2 supersedes v0.1 as the active world candidate. No ACT-R predictions, implementation, freeze, or execution are authorized by this artifact."
+}
