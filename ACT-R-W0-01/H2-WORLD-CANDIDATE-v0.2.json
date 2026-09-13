@@ -3,60 +3,45 @@
   "status": "CANDIDATE-AUDITED-NOT-FROZEN",
   "training_order_seed": 20260916,
   "future_order_seed": 20260917,
-  "state_space": [
-    [0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
-    [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]
-  ],
-  "training_states": [
-    [0, 0, 0], [0, 1, 0], [0, 1, 1],
-    [1, 0, 1], [1, 1, 0], [1, 1, 1]
-  ],
-  "A_held_out_states": [[0, 0, 1], [1, 0, 0]],
+  "state_space": [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],
+  "training_states": [[0,0,0],[0,1,0],[0,1,1],[1,0,1],[1,1,0],[1,1,1]],
+  "A_held_out_states": [[0,0,1],[1,0,0]],
   "training_trials": 192,
   "future_trials_per_condition": 96,
   "training_repetitions_per_state": 32,
   "future_repetitions_per_state": 12,
+  "ordered_state_sequences_artifact": "ACT-R-W0-01/H2-W0.2-STATE-SEQUENCES.json",
   "training_histories": {
     "H-S": {
       "definition": "A0 iff x XOR y = 1",
-      "fixture": "ACT-R-W0-01/H-S-training-v02.csv",
-      "sha256": "dbd02cdec9e7a19719234582ddcaa2c58c1d449e9b84e56be068dbda1bceb8ba"
+      "sequence_sha256": "981452afd78444b43534db51586a56ec5b4add2e8874d118e54a2f5b4ed8ec79"
     },
     "H-C": {
       "definition": "A0 iff c XOR x = 1",
-      "fixture": "ACT-R-W0-01/H-C-training-v02.csv",
-      "sha256": "edb8caef56ea2172f2d8bb719027f1f8aacf5241b9cbd5277eec5e380753fac1"
+      "sequence_sha256": "14061134b32cb5cae973b7c8821fc1dbd0b55f3585dff64b28e9b700e17b3afd"
     }
   },
   "future_conditions": {
     "A": {
-      "definition": "held-out joint states under the same source relation",
-      "novel_component": "The joint states (0,0,1) and (1,0,0) are absent from training and first appear in A.",
-      "H-S_fixture": "ACT-R-W0-01/H-S-A-v02.csv",
-      "H-C_fixture": "ACT-R-W0-01/H-C-A-v02.csv",
-      "H-S_sha256": "5fc8d3c24aec251b568988727aa1ec93dd5a221bd610734ede192a46f2fbbe21",
-      "H-C_sha256": "b311c8f44aaa3dcf85549a4744867577e050e35a10cfc40ca049dcb08e7c85ea"
+      "definition": "held-out joint-state extension under the same source relation",
+      "novel_component": "The joint states 001 and 100 are absent from both training histories and first appear in A.",
+      "H-S_sequence_sha256": "a627f46ea616817322108fc84982e3b682c14e1f82d4178ad5f94753492139eb",
+      "H-C_sequence_sha256": "45518cb0c49ccc55e0235ca17caa5538ba94ae1f65abc64f3367f2953f5135a8"
     },
     "B": {
       "definition": "structural recombination: A0 iff c XOR y = 1",
-      "H-S_fixture": "ACT-R-W0-01/H-S-B-v02.csv",
-      "H-C_fixture": "ACT-R-W0-01/H-C-B-v02.csv",
-      "H-S_sha256": "904dac23a09931008018a157c81f38e60d93bb685df1d51143537376dd62ba40",
-      "H-C_sha256": "5cceadff821e8dffb7c0c9e7f864da4c52f865fc742ffb1bcbcae934c0cfa90e"
+      "H-S_sequence_sha256": "5608606ed76f2723fe78bbf64ed57134ac28c21049804e1395d70c2d4fc8b629",
+      "H-C_sequence_sha256": "f0a6322c1960e71eae2bc3c8323580e8a2f244e2f5e8bd0113d126a861a0b4e9"
     },
     "C": {
       "definition": "surface bijection c->1-c, x->1-x, y->1-y; source relation preserved",
-      "H-S_fixture": "ACT-R-W0-01/H-S-C-v02.csv",
-      "H-C_fixture": "ACT-R-W0-01/H-C-C-v02.csv",
-      "H-S_sha256": "4a6181d35d4374d0c754df5cbd7af64fcc0ffa4dbda28ff84733ba41e649b3aa",
-      "H-C_sha256": "880d9ccfddfdf85e7b47a2dbdc5caabb106192ea80d5eafa93de87683c76048d"
+      "H-S_sequence_sha256": "498790a2ceb14662ba5944296198f6a243dfa1f5317550eef38c411e56717696",
+      "H-C_sequence_sha256": "e2757945c6ed790f1995c437674533b30833691eb1dd867e044ba44d77dab387"
     },
     "D": {
       "definition": "complement source action mapping",
-      "H-S_fixture": "ACT-R-W0-01/H-S-D-v02.csv",
-      "H-C_fixture": "ACT-R-W0-01/H-C-D-v02.csv",
-      "H-S_sha256": "ca904da4d4a20547b1a4f9ef44b00e51a92ba9423cc9724f5c5f69ffbf76a89d",
-      "H-C_sha256": "9ae0e4f8a33c0cb98edbcfc52d8dbf32ebbbefd1fff6fcbba30843aaf1c6c416"
+      "H-S_sequence_sha256": "821e8c577dc0bdbcf81f396bec1fb9e5833ab8fc487583f8ea8fc1720e051b86",
+      "H-C_sequence_sha256": "f07803906eb93a7f45ff329b940210297fc6fe0f4755e803be1955c1d3b8d818"
     }
   },
   "world_level_invariants": {
@@ -64,13 +49,14 @@
     "same_training_state_exposure_counts": true,
     "same_training_trial_count": true,
     "same_training_action_marginal": true,
-    "same_future_input_order_before_C": true,
+    "same_future_source_state_order": true,
     "same_future_state_exposure_counts": true,
     "same_future_trial_count": true,
     "same_future_action_marginal": true,
     "no_relation_labels_presented": true,
-    "no_precomputed_xor_feature_presented": true
+    "no_precomputed_xor_feature_presented": true,
+    "no_actr_state_assumptions_encoded": true
   },
   "interpretation": "H-S versus H-C is a matched relational-history transfer comparison, not structure-versus-no-structure.",
-  "note": "Candidate v0.2 supersedes v0.1 as the active world candidate. No ACT-R predictions, implementation, freeze, or execution are authorized by this artifact."
+  "note": "Candidate v0.2 supersedes v0.1 as the active world candidate. The complete ordered state sequences are materialized, but world freeze, ACT-R predictions, implementation, and H2 execution remain unauthorized."
 }
